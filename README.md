@@ -74,4 +74,10 @@ La barra muestra negra, corchea, semicorchea y fusa, de mayor a menor duración.
 
 ## Publicación
 
+- Aplicación: https://practica-musical-nine.vercel.app
+- Repositorio: https://github.com/guillermojmontenegro-hub/practica-musical
+- Panel de Vercel: https://vercel.com/guillermojmontenegro-2520s-projects/practica-musical
+
+Los cambios que se suben a `main` se publican mediante la integración de GitHub con Vercel.
+
 La configuración `vercel.json` compila la aplicación con Vite y publica `dist/`. La aplicación funciona como sitio estático y no necesita variables de entorno de servidor. El repositorio incluye el código fuente y las pruebas; las credenciales, dependencias y archivos generados quedan excluidos.
