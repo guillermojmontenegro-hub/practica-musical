@@ -1,3 +1,4 @@
+import {claimAudio} from './audio-session.mjs';
 import { setNotation, showSolution } from './notation.mjs';
 import { readStorage, writeCookie } from './storage.mjs';
 import { recordAttempt } from './dashboard.mjs';
@@ -48,7 +49,7 @@ export function initExerciseUI(advance,practiceActive) {
   const stats = readStorage(statsKey);
   let mode = Object.hasOwn(modes,preferences.exercise) ? preferences.exercise : 'scales', question, step, selected, graded, firstCorrect;
   let suspended = false;
-  let generation = 0, playing = false, sound, listens = 0;
+  let generation = 0, playing = false, sound, listens = 0, audioLease;
 
   function displaySound(current) {
     const name = current ? instruments[current.instrument].name :
@@ -57,6 +58,7 @@ export function initExerciseUI(advance,practiceActive) {
   }
 
   function stopAudio() {
+    audioLease?.release();audioLease=undefined;
     generation++;
     playing = false;
     stopExerciseAudio();
@@ -79,6 +81,8 @@ export function initExerciseUI(advance,practiceActive) {
   async function play(events, onStarted) {
     if (playing && !events) { stopAudio(); return; }
     if (events) stopAudio();
+    audioLease=claimAudio(stopAudio);
+    const lease=audioLease;
     const token = ++generation;
     const ready = await unlockAudio();
     if (token !== generation) return;
@@ -93,7 +97,7 @@ export function initExerciseUI(advance,practiceActive) {
     $('playStatus').textContent='Cargando instrumento…';
     const sampled=await prepareExerciseAudio(sequence,current);
     if(token!==generation)return;
-    playExercise(sequence,current,stopAudio);
+    playExercise(sequence,current,stopAudio,lease);
     onStarted?.();
     displaySound(current);
     playing = true;

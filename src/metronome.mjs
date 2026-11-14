@@ -1,3 +1,4 @@
+import {claimAudio} from './audio-session.mjs';
 import { $ } from './dom.mjs';
 import { unlockAudio, newClickTrack } from './audio.mjs';
 import { clamp, preferences, savePreferences } from './settings.mjs';
@@ -8,9 +9,10 @@ function initMetronome() {
   tempo.value = clamp(preferences.metroTempo,30,240,80);
   if (Array.from(meter.options).some(option=>option.value===preferences.metroMeter)) meter.value = preferences.metroMeter;
   subdivide.checked = Boolean(preferences.metroSubdivision);
-  let track, timer, step, nextTime, generation = 0;
+  let track, timer, step, nextTime, lease, generation = 0;
   const pending = new Set();
   function stop() {
+    lease?.release();lease=undefined;
     generation++;
     clearInterval(timer);
     for (const task of pending) clearTimeout(task);
@@ -43,6 +45,7 @@ function initMetronome() {
     }
   }
   async function start() {
+    lease=claimAudio(stop);
     const token = ++generation;
     const ready = await unlockAudio();
     if (token!==generation) return;
@@ -50,7 +53,7 @@ function initMetronome() {
       display.textContent = 'No se pudo iniciar el sonido.';
       return;
     }
-    track = newClickTrack();
+    track = newClickTrack(lease);
     step = 0;
     nextTime = track.now()+.03;
     button.textContent = 'Detener metrónomo';

@@ -1,3 +1,5 @@
+import {claimAudio} from './audio-session.mjs';
+import {melodicSampleOptions,sampleVelocity,instrumentOutput} from './audio-levels.mjs';
 const instruments = {
   piano: {name:'Piano', attack:.007, sustain:.27, partials:[[1,1],[2,.38],[3,.22],[4.01,.12],[6.02,.06]], decay:.20},
   guitar: {name:'Guitarra', attack:.004, sustain:.19, partials:[[1,1],[2,.5],[3,.27],[4,.19],[5,.11]], decay:.14},
@@ -12,6 +14,7 @@ const instruments = {
 let audio;
 let exercise;
 let alarm;
+let sampleOutput;
 const sampleNames={piano:'acoustic_grand_piano',guitar:'acoustic_guitar_nylon',flute:'flute',clarinet:'clarinet',marimba:'marimba'};
 const sampled=new Map();
 const loading=new Map();
@@ -21,9 +24,10 @@ async function prepareExerciseAudio(events,{instrument}) {
     if(sampled.has(name))return true;
     if(!loading.has(name)) loading.set(name,(async()=>{
       const {Soundfont,Sampler}=await import('smplr');
-      const player=instruments[name]?.percussion?Sampler(audio,{detune:0,lpfCutoffHz:20000,decayTime:.025,buffers:{C4:`/sounds/${name}.m4a`},volume:name==='cymbal'?100:90}):Soundfont(audio,{instrument:sampleNames[name],kit:'FluidR3_GM',
+      sampleOutput ||= instrumentOutput(audio);
+      const player=instruments[name]?.percussion?Sampler(audio,{destination:sampleOutput,detune:0,lpfCutoffHz:20000,decayTime:.025,buffers:{C4:`/sounds/${name}.m4a`},volume:name==='cymbal'?100:90}):Soundfont(audio,{destination:sampleOutput,instrument:sampleNames[name],kit:'FluidR3_GM',
         notesToLoad:{notes:Array.from({length:61},(_,i)=>36+i),fallback:'nearest'},
-        volume:85,extraGain:1,loadLoopData:true});
+        ...melodicSampleOptions(name),loadLoopData:true});
       try {await player.ready;sampled.set(name,player);return true;}
       catch {player.dispose();return false;}
       finally {loading.delete(name);}
@@ -81,23 +85,26 @@ function tone(midi,time,duration,volume,bus,instrument) {
 
 function stopExerciseAudio() {
   if (!exercise) return;
-  const {bus,voices,players,timer} = exercise;
+  const {bus,voices,players,stops,timer,lease} = exercise;
   clearTimeout(timer);
+  stops?.forEach(stop=>stop());
   players?.forEach(player=>player.stop());
-  exercise = undefined;
+  exercise = undefined;lease?.release();
   bus.disconnect();
   for (const osc of voices) {
     try { osc.stop(); } catch {}
   }
 }
 
-function playExercise(events,{instrument,bpm},finished) {
+function playExercise(events,{instrument,bpm},finished,lease) {
+  if(lease&&!lease.current())return;
   stopExerciseAudio();
+  lease ||= claimAudio(stopExerciseAudio);
   const start = audio.currentTime + .035;
   const beat = 60/bpm;
   const bus = channel();
   const voices = [];
-  const players=new Set();
+  const players=new Set(),stops=[];
   let end = -Infinity;
   let last;
   for (const [note,offset,duration,volume,voice] of events) {
@@ -105,7 +112,7 @@ function playExercise(events,{instrument,bpm},finished) {
     const player=voice!=='click'?sampled.get(voice||instrument):null;
     let scheduled=[];
     if(player){
-      player.start({note:instruments[voice]?.percussion?60:note,time:start+offset*beat,duration:length,velocity:Math.min(110,Math.max(35,Math.round(volume*500)))});
+      stops.push(player.start({note:instruments[voice]?.percussion?60:note,time:start+offset*beat,duration:length,velocity:sampleVelocity(volume,instruments[voice||instrument]?.percussion),ampRelease:.025}));
       players.add(player);
     }else scheduled=tone(note,start+offset*beat,length,volume,bus,voice||instrument);
     voices.push(...scheduled);
@@ -114,7 +121,7 @@ function playExercise(events,{instrument,bpm},finished) {
       last = scheduled.at(-1);
     }
   }
-  const playback = {bus,voices,players};
+  const playback = {bus,voices,players,stops,lease};
   exercise = playback;
   const finish=()=>{
     if (exercise !== playback) return;
@@ -125,25 +132,37 @@ function playExercise(events,{instrument,bpm},finished) {
   else last.addEventListener('ended',finish,{once:true});
 }
 
+function stopAlarm() {
+  if(!alarm)return;
+  const current=alarm;alarm=undefined;current.lease.release();current.bus.disconnect();
+  current.voices.forEach(voice=>{try{voice.stop();}catch{}});
+}
 function ring() {
   if (audio?.state !== 'running') return;
-  alarm?.disconnect();
-  const bus = channel();
-  alarm = bus;
-  const start = audio.currentTime + .02;
-  const last = [76,79,84].map((note,index)=>tone(note,start+index*.23,.21,.15,bus,'flute')).at(-1).at(-1);
-  last.addEventListener('ended',()=>{
-    bus.disconnect();
-    if (alarm === bus) alarm = undefined;
-  },{once:true});
+  const lease=claimAudio(stopAlarm),bus=channel();
+  const start=audio.currentTime+.02;
+  const voices=[76,79,84].flatMap((note,index)=>tone(note,start+index*.23,.21,.15,bus,'flute'));
+  const current={bus,voices,lease};alarm=current;
+  voices.at(-1).addEventListener('ended',()=>{if(alarm===current)stopAlarm();},{once:true});
 }
 
-function newClickTrack() {
-  const bus = channel();
+function newClickTrack(lease) {
+  const bus=channel(),voices=new Set();let stopped=false;
+  function stop() {
+    if(stopped)return;stopped=true;lease.release();bus.disconnect();
+    voices.forEach(voice=>{try{voice.stop();}catch{}});voices.clear();
+  }
+  lease ||= claimAudio(stop);
   return {
     now:()=>audio.currentTime,
-    click:(time,note,volume)=>tone(note,time,.055,volume,bus,'click'),
-    stop:()=>bus.disconnect()
+    click(time,note,volume){
+      if(stopped||!lease.current())return;
+      for(const voice of tone(note,time,.055,volume,bus,'click')){
+        voices.add(voice);voice.addEventListener('ended',()=>voices.delete(voice),{once:true});
+      }
+    },
+    stop
   };
 }
+
 export { instruments, unlockAudio, prepareExerciseAudio, playExercise, stopExerciseAudio, ring, newClickTrack };
