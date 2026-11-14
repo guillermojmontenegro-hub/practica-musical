@@ -160,8 +160,9 @@ export function showSolution(score,compare=false) {
 export function figureIcon(host,length) {
   const renderer=new Renderer(host,Renderer.Backends.SVG);renderer.resize(32,40);
   const context=renderer.getContext();context.setFillStyle('currentColor').setStrokeStyle('currentColor');
-  Glyph.renderGlyph(context,6,31,28,length===8?'noteheadWhole':length===4?'noteheadHalf':'noteheadBlack');
-  if(length!==8) context.beginPath().moveTo(14,30).lineTo(14,6).setLineWidth(1.3).stroke();
+  const whole=length===8,half=length===4;
+  Glyph.renderGlyph(context,whole?8:half?5:6,whole?24:31,whole?38:half?34:28,whole?'noteheadWhole':half?'noteheadHalf':'noteheadBlack');
+  if(!whole) context.beginPath().moveTo(half?15:14,30).lineTo(half?15:14,6).setLineWidth(1.3).stroke();
   if(figureDefinitions[length].flag) Glyph.renderGlyph(context,14,6,28,figureDefinitions[length].flag);
   if(figureDefinitions[length].dot) context.beginPath().arc(23,29,1.6,0,Math.PI*2).fill();
   host.querySelector('svg').setAttribute('aria-hidden','true');
