@@ -49,7 +49,7 @@ export function generateMelody(meter,pitches,tonic) {
 // Short, stepwise phrases for initial sight-singing practice.
 export function generateSingingMelody(meter,tonic) {
   const measures=Array.from({length:2},(_,bar)=>{
-    const split=meter.unit===2&&pick([true,false,false]) ? pick(Array.from({length:meter.beats-(bar===1?1:0)},(_,i)=>i)) : -1;
+    const split=meter.unit===2&&meter.beats<4&&pick([true,false,false]) ? pick(Array.from({length:meter.beats-(bar===1?1:0)},(_,i)=>i)) : -1;
     return Array.from({length:meter.beats},(_,beat)=>(beat===split?[1,1]:[meter.unit]).map(length=>({pitch:tonic,length}))).flat();
   });
   const notes=measures.flat();let previous=tonic;
@@ -63,9 +63,9 @@ export function generateSingingMelody(meter,tonic) {
 
 export function melodyEvents(measures,meter,start=meter.beats) {
   let offset=start;
-  return soundingNotes(measures.flat()).map(({pitch,length})=>{
+  return soundingNotes(measures.flat()).flatMap(({pitch,length,rest})=>{
     const duration=length/meter.unit;
     const event=[midi(pitch),offset,duration*.96,.16];
-    offset+=duration;return event;
+    offset+=duration;return rest?[]:[event];
   });
 }

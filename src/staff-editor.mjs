@@ -1,10 +1,10 @@
-import { setNotation, figureIcon } from './notation.mjs';
+import { setNotation, figureIcon, restIcon } from './notation.mjs';
 import { $ } from './dom.mjs';
 import { clefs, pitchLabel, figureDefinitions } from './music.mjs';
 
 function staffEditor(container,{tools,draw,ready,place,undo,status,editable=false}) {
   const panel=$('notation');
-  let tool=tools[0][0],active=0,cursor=4,selected=null,error='',drag=null,skipClick=false,voice=0,dotted=false,division=0;
+  let tool=tools.some(([id])=>id==='2')?'2':tools[0][0],active=0,cursor=4,selected=null,error='',drag=null,skipClick=false,voice=0,dotted=false,division=0,silent=false;
   const draft=container.staffDraft||[];
   for(const [bar,position,id,index,savedVoice] of draft) {
     if(id===null) undo(bar,savedVoice??0);else place(bar,position,id,index??null,savedVoice??0);
@@ -22,7 +22,7 @@ function staffEditor(container,{tools,draw,ready,place,undo,status,editable=fals
     voice=selectedVoice;active=bar;selected=index;error='';
     const score=draw(active,voice),note=records(score)[selected];
     if(note) {
-      cursor=position(note.pitch,score);
+      cursor=position(note.pitch,score);silent=Boolean(note.rest);
       if(score.edit==='signs') tool=score.symbol;
       else {
         tool=String(note.tuplet?.baseSpan??note.tuplet?.span??note.baseLength??figureDefinitions[note.length]?.baseLength??note.length);
@@ -39,7 +39,7 @@ function staffEditor(container,{tools,draw,ready,place,undo,status,editable=fals
     if(result?.voice!==undefined) voice=result.voice;
     update();return true;
   }
-  function action() {return division?`n${division}@${tool}@${dotted?1:0}`:dotted?`d@${tool}`:tool;}
+  function action() {return (silent?'r@':'')+(division?`n${division}@${tool}@${dotted?1:0}`:dotted?`d@${tool}`:tool);}
   function choose(value) {tool=value;error='';if(selected!==null||value==='none') edit(action());else update();}
   function refreshSelection() {if(selected!==null)selectNote(active,selected,voice);else update();}
   const choices=[];
@@ -56,6 +56,9 @@ function staffEditor(container,{tools,draw,ready,place,undo,status,editable=fals
   if(grouped.length) toolbar.append(groups);
   const dot=button('Puntillo','·',()=>{if(selected!==null){edit('dot');refreshSelection();}else{dotted=!dotted;update();}});
   if(tools.some(([value])=>Number(value)>0))toolbar.insertBefore(dot,grouped.length?groups:null);
+  const rest=button('Silencio','',()=>{if(selected!==null){edit('rest');refreshSelection();}else{silent=!silent;update();}});
+  restIcon(rest);
+  if(tools.some(([value])=>Number(value)>0)) toolbar.insertBefore(rest,dot);
   const lower=button('Bajar nota','↓',()=>movePitch(-1));
   const higher=button('Subir nota','↑',()=>movePitch(1));
   const tie=button('Ligar con siguiente','⌒',()=>edit('tie'));
@@ -99,12 +102,12 @@ function staffEditor(container,{tools,draw,ready,place,undo,status,editable=fals
     barLabel.textContent=`Compás ${active+1} de ${bars}`;
     for(const [id,node] of choices) node.setAttribute('aria-pressed',String(id===tool));
     groups.value=division?`n${division}`:'';
-    dot.setAttribute('aria-pressed',String(dotted));
+    dot.setAttribute('aria-pressed',String(dotted));rest.setAttribute('aria-pressed',String(silent));
     dot.disabled=score.edit==='signs';
     voices.hidden=score.secondaryMeasures==null;voiceButtons.forEach((node,index)=>node.setAttribute('aria-pressed',String(index===voice)));
     const pitched=score.edit==='signs'||!score.rhythm||score.guides?.length;
-    lower.hidden=higher.hidden=selected===null||!pitched;
-    tie.hidden=selected===null||score.edit==='signs';remove.hidden=selected===null;
+    lower.hidden=higher.hidden=selected===null||!pitched||silent;
+    tie.hidden=selected===null||silent||score.edit==='signs';remove.hidden=selected===null;
     const step=score.rhythm?2:1;
     lower.disabled=validPosition(cursor-step,score)===cursor;higher.disabled=validPosition(cursor+step,score)===cursor;
     tie.setAttribute('aria-pressed',String(Boolean(notes[selected]?.tie)));
@@ -112,7 +115,7 @@ function staffEditor(container,{tools,draw,ready,place,undo,status,editable=fals
     remove.setAttribute('aria-label',notes[selected]?.tuplet?'Eliminar grupo':'Eliminar nota');remove.title=remove.getAttribute('aria-label');
     const marker=panel.querySelector('.staff-cursor');marker?.setAttribute('y1',76+voice*100-cursor*5);marker?.setAttribute('y2',76+voice*100-cursor*5);
     $('next').disabled=!ready();
-    output.textContent=(status?.(active,voice)||'')+(selected!==null?` · ${pitchLabel(notes[selected].pitch)} seleccionada`:'')+(error?` · ${error}`:'');output.dataset.error=String(Boolean(error));
+    output.textContent=(status?.(active,voice)||'')+(selected!==null?` · ${notes[selected].rest?'Silencio seleccionado':pitchLabel(notes[selected].pitch)+' seleccionada'}`:'')+(error?` · ${error}`:'');output.dataset.error=String(Boolean(error));
   }
   panel.tabIndex=0;
   panel.setAttribute('aria-label','Editor de partitura. Tocá para escribir, seleccioná una nota y usá símbolos o arrastrá para editar. Flechas para compás y altura; Intro para escribir; Suprimir para eliminar.');
@@ -132,7 +135,7 @@ function staffEditor(container,{tools,draw,ready,place,undo,status,editable=fals
     drag={bar,index,y:event.clientY,cursor,scale,moved:false,wasSelected};panel.setPointerCapture(event.pointerId);
   };
   panel.onpointermove=event=>{
-    if(!drag) return;
+    if(!drag||silent) return;
     const delta=(drag.y-event.clientY)/(5*drag.scale);
     if(Math.abs(delta)<1&&!drag.moved) return;
     drag.moved=true;cursor=validPosition(Math.round(drag.cursor+delta),draw(active,voice));update();

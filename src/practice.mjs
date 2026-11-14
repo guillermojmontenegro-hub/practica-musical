@@ -92,12 +92,15 @@ export function initPractice(controller) {
     $('phase-round').textContent = `Ronda ${phase.round} de ${session.rounds}`;
     $('phase-description').textContent = phase.description;
     $('pause-session').textContent = paused ? 'Reanudar' : 'Pausar';
+    $('pause-session').disabled=Boolean(session.awaitingExercise);
+    if(session.awaitingExercise)$('practice-status').textContent='Tiempo cumplido. Terminá el ejercicio actual para continuar.';
     showPhaseClock(session.pausedAt ?? Date.now());
   }
   function startPhase() {
     const phase = currentPhase();
     session.end = Date.now()+phase.minutes*60000;
     session.pausedAt = null;
+    session.awaitingExercise = false;
     showPhase();
     if (appActive()) guidedMode();
     else storeSession();
@@ -133,10 +136,21 @@ export function initPractice(controller) {
     const seconds = Math.max(0,Math.ceil((session.end-now)/1000));
     $('clock').textContent = `${String(Math.floor(seconds/60)).padStart(2,'0')}:${String(seconds%60).padStart(2,'0')}`;
   }
+  function waitForExercise() {
+    if(session.awaitingExercise)return;
+    session.awaitingExercise=true;
+    showPhaseClock(session.end);
+    $('pause-session').disabled=true;
+    $('practice-status').textContent='Tiempo cumplido. Terminá el ejercicio actual para continuar.';
+    storeSession();
+  }
   function tick() {
     const now = new Date();
     if (session && session.pausedAt === null) {
-      if (now.getTime() >= session.end) nextPhase();
+      if (now.getTime() >= session.end) {
+        if(currentPhase().id==='app')waitForExercise();
+        else nextPhase();
+      }
       else showPhaseClock(now.getTime());
     }
     const [hours,minutes] = $('reminder').value.split(':').map(Number);
@@ -228,7 +242,7 @@ export function initPractice(controller) {
     if (!session) return;
     const now = Date.now();
     if (session.pausedAt === null) {
-      if (now >= session.end) { nextPhase(); return; }
+      if (now >= session.end) { if(currentPhase().id==='app')waitForExercise();else nextPhase();return; }
       session.pausedAt = now;
     } else {
       session.end += now-session.pausedAt;

@@ -7,7 +7,7 @@ test('both rhythmic voices start empty and must be completed independently',asyn
  await expect(page.locator('[data-note-index]')).toHaveCount(0);
  await expect(page.getByRole('button',{name:'Voz 2',exact:true})).toBeVisible();
  const capacity=Number((await page.locator('#editor > [role=status]').textContent()).match(/de (\d+)/)[1]);
- expect(await page.locator('.score-toolbar [data-tool]').evaluateAll(nodes=>nodes.map(node=>node.dataset.tool))).toEqual(['2','1','0.5','0.25']);
+ expect(await page.locator('.score-toolbar [data-tool]').evaluateAll(nodes=>nodes.map(node=>node.dataset.tool))).toEqual(['8','4','2','1','0.5','0.25']);
  for(let voice=0;voice<2;voice++){
   await page.getByRole('button',{name:`Voz ${voice+1}`,exact:true}).click();
   if(voice)await page.getByRole('button',{name:'Compás anterior',exact:true}).click();

@@ -1,5 +1,5 @@
 import { rhythmEvents } from '../rhythm-playback.mjs';
-import { createVoiceEditors, soundingTimeline, tupletNotes as makeTuplet } from '../score-model.mjs';
+import { createVoiceEditors, soundingTimeline, groupTools, tupletNotes as makeTuplet } from '../score-model.mjs';
 import { transcriptionErrors } from '../diagnostics.mjs';
 import { $, pick } from '../dom.mjs';
 import { selectMeter, meterLabel, figures, baseFigureTools } from '../music.mjs';
@@ -22,7 +22,7 @@ function barPattern(meter, syncopated) {
   return beats.flat().map(length=>({length,pitch:6}));
 }
 
-const groups = [[2,'Dosillo'],[3,'Tresillo'],[4,'Cuatricillo'],[5,'Quintillo']];
+const groups=groupTools.map(([id,label])=>[Number(id.slice(5)),label]);
 const sum = bar => bar.reduce((total,note)=>total+note.length,0);
 const close = (a,b) => Math.abs(a-b)<1e-8;
 const timeline = soundingTimeline;
@@ -64,9 +64,7 @@ function rhythmQuestion(type='syncopation') {
   const draw = (notes,second,label,active,activeVoice=0)=>staff({clef:'sol',meter,measures:notes,secondaryMeasures:second,label,rhythm:true,backing,edit:active!==undefined,active,activeVoice});
   const events=rhythmEvents(measures,meter,backing,polyBass,secondary);
   const solution=draw(measures,secondary,'Ritmo de referencia en '+context);
-  const tools = [...baseFigureTools];
-
-  if (size) tools.push(...groups.map(([number,label])=>['group'+number,label]));
+  const tools = [...baseFigureTools,...groupTools];
   return {context:`${context} · ${meter.beats} pulsos por compás · ${meter.unit} corcheas por pulso` + (poly ? ` · Acompañamiento: 2 golpes por pulso (${meter.beats*2} por compás)` : twoVoices ? ' · Dos voces' : ' · Una voz'),rhythmPitches:!poly,events,notation:draw(entered,enteredSecond,'Transcripción rítmica'),steps:[{
     prompt:twoVoices ? 'Transcribí las dos voces.' : 'Transcribí el ritmo.',
     check:()=>timeline(entered.flat())===timeline(measures.flat())&&(!twoVoices||timeline(enteredSecond.flat())===timeline(secondary.flat())),

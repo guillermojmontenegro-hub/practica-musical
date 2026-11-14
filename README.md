@@ -70,7 +70,7 @@ Los intervalos se responden mediante tres selectores: número, calidad y direcci
 
 Todos los desplegables visibles usan `CustomSelect`, un componente React con teclado, foco y opciones propias que mantiene los contratos de los formularios. En los ritmos a dos voces, ambos pentagramas comienzan vacíos y deben completarse antes de comprobar. El borrador y el deshacer incluyen la voz editada.
 
-La barra muestra negra, corchea, semicorchea y fusa, de mayor a menor duración. El puntillo y los grupos n son modificadores de la figura elegida o de la selección; las ligaduras se aplican a una nota cargada y su siguiente de igual altura.
+La barra muestra redonda, blanca, negra, corchea, semicorchea y fusa, de mayor a menor duración. El silencio, el puntillo y los grupos n son modificadores de la figura elegida o de la selección; las ligaduras se aplican a una nota cargada y su siguiente de igual altura.
 
 ## Publicación
 
@@ -89,3 +89,9 @@ La configuración `vercel.json` compila la aplicación con Vite y publica `dist/
 La referencia y la transcripción comparten la anchura de los compases. Las dos voces se alinean mediante VexFlow y las marcas de pulso siguen las posiciones de las notas. Al cambiar de ejercicio, el pentagrama vuelve al inicio para que se vean la clave y la armadura.
 
 Las pruebas de correlación comparan, nota por nota, los ticks que realmente calcula VexFlow con las duraciones usadas por el audio, en ambas voces y en 1.600 ejercicios generados. También se verifican los modificadores n y puntillo, las ligaduras entre compases y los grupos incompletos.
+
+## Instrumentos muestreados
+
+Los ejercicios usan smplr y muestras FluidR3 GM para piano, guitarra de nylon, flauta, clarinete y marimba. Se cargan a demanda y se reutilizan durante la sesión. Si la carga falla o supera 12 segundos, se usa el sintetizador local. Los ejercicios rítmicos a dos voces usan bombo para la voz 1 y platillo para la voz 2, con muestras TR-808 servidas con la app; el conteo inicial conserva su pulso separado. Créditos y licencias en `public/sonidos.html`.
+
+El Pomodoro de ejercicios de la app se detiene en 00:00 sin ocultar ni reemplazar la consigna, la transcripción o su corrección. El cambio de bloque espera a que se termine el ejercicio y se pulse Siguiente ejercicio (o se lo omita). Esta espera también se conserva al recargar; el tiempo adicional no aumenta el contador de práctica.

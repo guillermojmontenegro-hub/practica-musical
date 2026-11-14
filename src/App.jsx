@@ -14,6 +14,7 @@ function SoundSettings() {
     <label>Tempo <input id="tempo" type="number" min="40" max="220" defaultValue="90" /> BPM</label>
     <label><input type="checkbox" id="random-tempo" /> Tempo aleatorio</label>
   </div>
+  <p className="editor-help"><a href="/sonidos.html" target="_blank" rel="noreferrer">Créditos de los sonidos</a></p>
   <details>
     <summary>Metrónomo</summary>
     <div className="practice-controls">

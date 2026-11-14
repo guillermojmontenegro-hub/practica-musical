@@ -39,7 +39,7 @@ export function drawStaff(host, score) {
   const rendered=sources.map(()=>[]);
   function engrave(source,voice) {
     const notes=source.map(note=>{
-      const result=new StaveNote({clef:voice===0&&clef==='fa'&&!rhythm?'bass':'treble',keys:voice===1?['b/4/x2']:[pitchKey(note.pitch)],duration:noteDuration(note),...(voice===1?{stem_direction:-1}:{auto_stem:true})});
+      const result=new StaveNote({clef:voice===0&&clef==='fa'&&!rhythm?'bass':'treble',keys:note.rest?[voice===0&&clef==='fa'&&!rhythm?'d/3':'b/4']:voice===1?[`b/4/${noteSpelling(note).innerLength>=8?'x0':noteSpelling(note).innerLength>=4?'x1':'x2'}`]:[pitchKey(note.pitch)],duration:noteDuration(note),...(voice===1?{stem_direction:-1}:{auto_stem:true})});
       if(noteSpelling(note).dots) Dot.buildAndAttach([result]);
       return result;
     });
@@ -78,10 +78,10 @@ export function drawStaff(host, score) {
         const range=byStart.get(index);
         if(range){
           flush();const group=notes.slice(range.start,range.end);
-          if(group.length>1&&group.every(note=>parseInt(note.getDuration(),10)>=8))beams.push(new Beam(group,voice===0));
+          if(group.length>1&&group.every(note=>!note.isRest()&&parseInt(note.getDuration(),10)>=8))beams.push(new Beam(group,voice===0));
           offset+=range.span;index=range.end-1;continue;
         }
-        const beat=Math.floor((offset+1e-8)/meter.unit),short=parseInt(notes[index].getDuration(),10)>=8;
+        const beat=Math.floor((offset+1e-8)/meter.unit),short=!source[index].rest&&parseInt(notes[index].getDuration(),10)>=8;
         if(!short||beat!==runBeat)flush();
         if(short){run.push(notes[index]);runBeat=beat;}
         offset+=source[index].length;
@@ -114,11 +114,11 @@ export function drawStaff(host, score) {
       }
     }
   }
-  if(secondary)for(const [voice,label] of [[0,'Voz 1'],[1,'Voz 2']]){
+  if(secondary)for(const [voice,label] of [[0,'Voz 1 · Bombo'],[1,'Voz 2 · Platillo']]){
     const text=document.createElementNS(svgNS,'text');text.setAttribute('x','10');text.setAttribute('y',String(18+voice*100));text.setAttribute('class','voice-label');text.textContent=label;svg.append(text);
   }
   sources.forEach((bars,voice)=>bars.forEach((notes,bar)=>notes.forEach((note,index)=>{
-    if(!note.tie)return;
+    if(!note.tie||note.rest)return;
     const first=rendered[voice][bar][index],last=rendered[voice][bar][index+1]||rendered[voice][bar+1]?.[0];
     if(last&&note.pitch===(notes[index+1]||bars[bar+1]?.[0])?.pitch){const group=context.openGroup('score-tie');group.setAttribute('data-tie-voice',String(voice));group.setAttribute('data-tie-bar',String(bar));new StaveTie({first_note:first,last_note:last,first_indices:[0],last_indices:[0]}).setContext(context).draw();context.closeGroup();}
   })));
@@ -128,7 +128,7 @@ export function drawStaff(host, score) {
     if(editNotes&&edit==='signs')signs.forEach((pitch,index)=>overlay(svg,'rect',{class:`staff-note-hit ${index===selected?'note-selected':''}`,'data-note-bar':0,'data-note-voice':0,'data-note-index':index,'data-pitch':pitch,x:44+index*20,y:y(pitch)-14,width:20,height:30,rx:4,fill:'transparent',stroke:'none'}));
     else if(editNotes)sources.forEach((bars,voice)=>rendered[voice].forEach((notes,bar)=>notes.forEach((note,index)=>{
       const value=bars[bar][index];
-      overlay(svg,'rect',{class:`staff-note-hit ${bar===active&&voice===activeVoice&&index===selected?'note-selected':''}`,'data-note-bar':bar,'data-note-voice':voice,'data-note-index':index,'data-pitch':value.pitch,'data-length':value.length,'data-tie':Boolean(value.tie),'data-dotted':Boolean(value.dotted??figureDefinitions[value.length]?.dot),'data-group':value.tuplet?.size||'',x:note.getNoteHeadBeginX()-7,y:note.getYs()[0]-15,width:26,height:30,rx:5,fill:'transparent',stroke:'none'});
+      overlay(svg,'rect',{class:`staff-note-hit ${bar===active&&voice===activeVoice&&index===selected?'note-selected':''}`,'data-note-bar':bar,'data-note-voice':voice,'data-note-index':index,'data-rest':Boolean(value.rest),'data-pitch':value.pitch,'data-length':value.length,'data-tie':Boolean(value.tie),'data-dotted':Boolean(value.dotted??figureDefinitions[value.length]?.dot),'data-group':value.tuplet?.size||'',x:note.getNoteHeadBeginX()-7,y:note.getYs()[0]-15,width:26,height:30,rx:5,fill:'transparent',stroke:'none'});
     })));
     const area=areas[active]||areas[0];if(area)overlay(svg,'line',{class:'staff-cursor',x1:area.x+4,x2:area.x+area.width-4,y1:56+activeVoice*100,y2:56+activeVoice*100});
   }
@@ -160,9 +160,16 @@ export function showSolution(score,compare=false) {
 export function figureIcon(host,length) {
   const renderer=new Renderer(host,Renderer.Backends.SVG);renderer.resize(32,40);
   const context=renderer.getContext();context.setFillStyle('currentColor').setStrokeStyle('currentColor');
-  Glyph.renderGlyph(context,6,31,28,'noteheadBlack');
-  context.beginPath().moveTo(14,30).lineTo(14,6).setLineWidth(1.3).stroke();
+  Glyph.renderGlyph(context,6,31,28,length===8?'noteheadWhole':length===4?'noteheadHalf':'noteheadBlack');
+  if(length!==8) context.beginPath().moveTo(14,30).lineTo(14,6).setLineWidth(1.3).stroke();
   if(figureDefinitions[length].flag) Glyph.renderGlyph(context,14,6,28,figureDefinitions[length].flag);
   if(figureDefinitions[length].dot) context.beginPath().arc(23,29,1.6,0,Math.PI*2).fill();
+  host.querySelector('svg').setAttribute('aria-hidden','true');
+}
+
+export function restIcon(host) {
+  const renderer=new Renderer(host,Renderer.Backends.SVG);renderer.resize(32,40);
+  const context=renderer.getContext();context.setFillStyle('currentColor');
+  Glyph.renderGlyph(context,10,20,28,'restQuarter');
   host.querySelector('svg').setAttribute('aria-hidden','true');
 }

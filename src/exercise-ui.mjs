@@ -4,7 +4,7 @@ import { recordAttempt } from './dashboard.mjs';
 import { lockStaff } from './staff-editor.mjs';
 import { $, shuffle, withSeed } from './dom.mjs';
 import { modes } from './registry.mjs';
-import { instruments, unlockAudio, playExercise, stopExerciseAudio } from './audio.mjs';
+import { instruments, unlockAudio, prepareExerciseAudio, playExercise, stopExerciseAudio } from './audio.mjs';
 import { nextSound, playbackSound, preferences, savePreferences } from './settings.mjs';
 
 export function initExerciseUI(advance,practiceActive) {
@@ -53,7 +53,7 @@ export function initExerciseUI(advance,practiceActive) {
   function displaySound(current) {
     const name = current ? instruments[current.instrument].name :
       $('random-instrument').checked ? 'Instrumento aleatorio' : instruments[sound.instrument].name;
-    $('sound-playing').textContent = modes[mode].play ? `${name} · ${sound.bpm} BPM` : '';
+    $('sound-playing').textContent = modes[mode].play ? `${question?.events?.some(event=>event[4]==='cymbal')?'Bombo · Platillo':name} · ${sound.bpm} BPM` : '';
   }
 
   function stopAudio() {
@@ -87,13 +87,19 @@ export function initExerciseUI(advance,practiceActive) {
       return;
     }
     const current = playbackSound(sound);
-    playExercise(events || exerciseEvents(),current,stopAudio);
+    const sequence=events||exerciseEvents();
+    playing=true;
+    $('play').setAttribute('aria-label','Detener audio');
+    $('playStatus').textContent='Cargando instrumento…';
+    const sampled=await prepareExerciseAudio(sequence,current);
+    if(token!==generation)return;
+    playExercise(sequence,current,stopAudio);
     onStarted?.();
     displaySound(current);
     playing = true;
     $('listen').classList.add('playing');
     $('play').setAttribute('aria-label','Detener audio');
-    $('playStatus').textContent = 'Reproduciendo…';
+    $('playStatus').textContent = sampled?'Reproduciendo…':'Reproduciendo · sonido básico';
   }
   function saveDraft() {
     if (!question) return;

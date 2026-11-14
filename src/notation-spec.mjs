@@ -22,6 +22,7 @@ export function tupletSpelling(note) {
   return {size,span,occupied,innerLength,duration:String(denominator),irregular:size!==occupied};
 }
 export function noteSpelling(note) {
+  if(note.rest){const spec=noteSpelling({...note,rest:false});return {...spec,duration:spec.duration+'r'};}
   if(note.tuplet) return {...tupletSpelling(note),dots:0};
   const figure=figureDefinitions[note.length];
   if(!figure) throw new Error(`Figura sin representación: ${note.length}`);

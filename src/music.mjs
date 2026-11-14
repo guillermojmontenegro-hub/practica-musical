@@ -4,7 +4,7 @@ const letters = ['Do','Re','Mi','Fa','Sol','La','Si'];
 const naturals = [0,2,4,5,7,9,11];
 const pitchNames = ['Do','Do♯','Re','Mi♭','Mi','Fa','Fa♯','Sol','Sol♯','La','Si♭','Si'];
 const meters = {
-  simple: [{top:2,bottom:4,beats:2,unit:2},{top:3,bottom:4,beats:3,unit:2}],
+  simple: [{top:2,bottom:4,beats:2,unit:2},{top:3,bottom:4,beats:3,unit:2},{top:4,bottom:4,beats:4,unit:2}],
   compound: [{top:6,bottom:8,beats:2,unit:3},{top:9,bottom:8,beats:3,unit:3}]
 };
 const clefs = {
@@ -12,6 +12,10 @@ const clefs = {
   fa:{symbol:'𝄢', bottom:-10, shift:-14}
 };
 const figureDefinitions = {
+  8:{label:'Redonda',duration:'w'},
+  4:{label:'Blanca',duration:'2'},
+  12:{label:'Redonda con puntillo',duration:'wd',dot:true,baseLength:8},
+  6:{label:'Blanca con puntillo',duration:'2d',dot:true,baseLength:4},
   2:{label:'Negra',duration:'4'},
   1:{label:'Corchea',duration:'8',flag:'flag8thUp'},
   '0.5':{label:'Semicorchea',duration:'16',flag:'flag16thUp'},
@@ -22,7 +26,7 @@ const figureDefinitions = {
   '0.375':{label:'Fusa con puntillo',duration:'32d',dot:true,baseLength:.25,flag:'flag32ndUp'}
 };
 const figures=Object.fromEntries(Object.entries(figureDefinitions).map(([length,figure])=>[length,figure.label]));
-const baseFigureTools=[2,1,.5,.25].map(length=>[String(length),figureDefinitions[length].label]);
+const baseFigureTools=[8,4,2,1,.5,.25].map(length=>[String(length),figureDefinitions[length].label]);
 const mod = (value, divisor) => ((value % divisor) + divisor) % divisor;
 const pitchLabel = note => letters[mod(note,7)] + (4 + Math.floor(note/7));
 const midi = note => 60 + 12*Math.floor(note/7) + naturals[mod(note,7)];

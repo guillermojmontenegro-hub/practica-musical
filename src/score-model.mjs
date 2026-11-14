@@ -11,15 +11,15 @@ export function soundingNotes(notes) {
   const result=[];
   notes.forEach((note,index)=>{
     const previous=notes[index-1];
-    if(previous?.tie&&previous.pitch===note.pitch) result.at(-1).length+=note.length;
-    else result.push({pitch:note.pitch,length:note.length});
+    if(previous?.tie&&!previous.rest&&!note.rest&&previous.pitch===note.pitch) result.at(-1).length+=note.length;
+    else result.push({pitch:note.pitch,length:note.length,...(note.rest?{rest:true}:{})});
   });
   return result;
 }
-export const soundingTimeline=notes=>soundingNotes(notes).map(n=>`${n.pitch}:${Math.round(n.length*1000000)}`).join(',');
+export const soundingTimeline=notes=>soundingNotes(notes).map(n=>`${n.rest?'r':n.pitch}:${Math.round(n.length*1000000)}`).join(',');
 function repairTies(measures,capacity) {
   const notes=measures.flat();
-  notes.forEach((note,index)=>{if(note.tie&&note.pitch!==notes[index+1]?.pitch) delete note.tie;});
+  notes.forEach((note,index)=>{if(note.tie&&(note.rest||notes[index+1]?.rest||note.pitch!==notes[index+1]?.pitch)) delete note.tie;});
   measures.forEach(bar=>{if(sumNotes(bar)<capacity-epsilon&&bar.length) delete bar.at(-1).tie;});
 }
 function groupRange(notes,index) {
@@ -48,6 +48,13 @@ export function createScoreEditor(measures,{capacity,unit,pitchFromPosition,allo
         notes.splice(start,count);
         return commit(before);
       }
+      if(tool==='rest') {
+        if(!selected) return fail('Seleccioná una figura para modificarla.');
+        notes[index].rest=!notes[index].rest;
+        return commit(before,index);
+      }
+      const silent=tool.startsWith('r@');
+      if(silent) tool=tool.slice(2);
       if(tool==='tie') {
         // With no selection, preserve the previous editor's "last two" shortcut.
         const from=selected ? index : notes.length-2;
@@ -55,6 +62,7 @@ export function createScoreEditor(measures,{capacity,unit,pitchFromPosition,allo
         const next=notes[from+1] || (from===notes.length-1 ? measures[bar+1]?.[0] : null);
         if(!first||!next) return fail('Cargá la nota siguiente antes de agregar la ligadura.');
         if(from===notes.length-1&&sumNotes(notes)<capacity-epsilon) return fail('Completá este compás antes de ligar con el siguiente.');
+        if(first.rest||next.rest) return fail('Las ligaduras unen notas, no silencios.');
         if(first.pitch!==next.pitch) return fail('La ligadura de prolongación une notas de la misma altura.');
         first.tie=!first.tie;
         return commit(before,selected?index:null);
@@ -75,6 +83,7 @@ export function createScoreEditor(measures,{capacity,unit,pitchFromPosition,allo
           const meta=replacement[0].tuplet;Object.assign(meta,{baseSpan:base,dotted:nextDot});
           replacement.forEach(note=>{note.dotted=nextDot;});
         } else replacement=[{pitch:current.pitch,length,baseLength:base,dotted:nextDot}];
+        replacement.forEach(note=>{if(current.rest)note.rest=true;});
         if(notes[start+count-1]?.tie) replacement.at(-1).tie=true;
         notes.splice(start,count,...replacement);
         return commit(before,start);
@@ -91,7 +100,7 @@ export function createScoreEditor(measures,{capacity,unit,pitchFromPosition,allo
       if(!Number.isFinite(length)||length<=0||(!size&&!figureDefinitions[length])) return fail('Elegí una figura.');
       // A member of a tuplet keeps its own pitch; changing its figure replaces the entire group.
       if(selected&&size&&notes[index].tuplet?.size===size&&Math.abs(notes[index].tuplet.span-length)<epsilon) {
-        notes[index].pitch=pitch;
+        notes[index].pitch=pitch;notes[index].rest=silent;
         return commit(before,index);
       }
       const [start,count]=selected ? groupRange(notes,index) : [notes.length,0];
@@ -102,6 +111,7 @@ export function createScoreEditor(measures,{capacity,unit,pitchFromPosition,allo
         Object.assign(replacement[0].tuplet,{baseSpan:base,dotted});
         replacement.forEach(note=>{note.dotted=dotted;});
       }
+      replacement.forEach(note=>{if(silent)note.rest=true;});
       if(selected&&notes[start+count-1]?.tie) replacement.at(-1).tie=true;
       notes.splice(start,count,...replacement);
       return commit(before,selected?start:null);

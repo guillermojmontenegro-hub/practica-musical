@@ -6,7 +6,7 @@ import { readStorage, writeCookie } from './storage.mjs';
 const preferencesKey = 'practica-musical-preferencias';
 const preferences = readStorage(preferencesKey);
 const savePreferences = () => writeCookie(preferencesKey,preferences);
-const instrumentIds = Object.keys(instruments).filter(id=>id!=='click');
+const instrumentIds = Object.keys(instruments).filter(id=>id!=='click'&&!instruments[id].percussion);
 const randomTempos = [56,64,72,80,88,96,104,112,120,132];
 const clamp = (value,min,max,fallback) => Math.min(max,Math.max(min,Number(value) || fallback));
 let lastInstrument;
