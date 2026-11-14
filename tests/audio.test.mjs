@@ -10,6 +10,7 @@ test('Web Audio scheduling uses the same compound pulses, subdivisions and tied 
   currentTime=100;state='running';destination={};
   async resume(){}
   createGain(){return {gain:param(),connect(){return this;},disconnect(){}};}
+  createWaveShaper(){return {connect(){return this;}};}
   createOscillator(){const osc={frequency:{value:0},connect(){return this;},disconnect(){},start(time){this.started=time;},stop(time){this.stopped??=time;},addEventListener(){}};oscillators.push(osc);return osc;}
  }
  const previous=globalThis.window;globalThis.window={AudioContext};

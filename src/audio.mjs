@@ -55,10 +55,11 @@ function channel() {
   return bus;
 }
 
-function tone(midi,time,duration,volume,bus,instrument) {
+function tone(midi,time,duration,volume,bus,instrument,amplified=false) {
   const {attack,sustain,partials,decay} = instruments[instrument];
   const gain = audio.createGain();
-  gain.connect(bus);
+  if(amplified)sampleOutput ||= instrumentOutput(audio);
+  gain.connect(amplified?sampleOutput:bus);
   const peak = Math.min(attack,duration*.22);
   const body = Math.min(duration*.72,peak+decay);
   gain.gain.setValueAtTime(.0001,time);
@@ -114,7 +115,7 @@ function playExercise(events,{instrument,bpm},finished,lease) {
     if(player){
       stops.push(player.start({note:instruments[voice]?.percussion?60:note,time:start+offset*beat,duration:length,velocity:sampleVelocity(volume,instruments[voice||instrument]?.percussion),ampRelease:.025}));
       players.add(player);
-    }else scheduled=tone(note,start+offset*beat,length,volume,bus,voice||instrument);
+    }else scheduled=tone(note,start+offset*beat,length,volume,bus,voice||instrument,voice!=='click');
     voices.push(...scheduled);
     if (offset*beat+length >= end) {
       end = offset*beat+length;
