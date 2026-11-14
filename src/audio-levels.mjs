@@ -5,9 +5,10 @@ export function sampleVelocity(volume,percussion=false) {
 }
 export function instrumentOutput(context) {
   const limiter=context.createDynamicsCompressor();
-  limiter.threshold.value=-6;limiter.knee.value=6;limiter.ratio.value=20;
+  limiter.threshold.value=-2.5;limiter.knee.value=3;limiter.ratio.value=20;
   limiter.attack.value=.001;limiter.release.value=.12;
-  limiter.connect(context.destination);return limiter;
+  const gain=context.createGain();gain.gain.value=2;
+  gain.connect(limiter);limiter.connect(context.destination);return gain;
 }
 
 // Match the rendered attack RMS (first 120 ms), including the playback envelope.
