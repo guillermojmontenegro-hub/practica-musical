@@ -1,3 +1,4 @@
+import { assertWrittenDurations } from './assert-notation.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { rhythmQuestion } from '../src/exercises/rhythm.mjs';
@@ -15,7 +16,7 @@ test('every generated rhythm and melody figure has a matching tool and engraving
   for(family of ['simple','compound']) for(heights of ['1','2']) for(const mode of ['syncopation','poly','tuplet','dictation']) for(let seed=0;seed<100;seed++) {
    const question=withSeed(seed*8179+9,()=>mode==='dictation'?melodyQuestion('dictation'):rhythmQuestion(mode));
    const score=question.steps[0].solution,{meter}=score;
-   score.measures.forEach(bar=>assert.ok(Math.abs(sumNotes(bar)-meter.beats*meter.unit)<1e-8));
+   for(const bar of [...score.measures,...(score.secondaryMeasures||[])]){assert.ok(Math.abs(sumNotes(bar)-meter.beats*meter.unit)<1e-8);assertWrittenDurations(bar);}
    for(const note of score.measures.flat()) {
     if(note.tuplet) {groups++;assert.ok([2,3,4,5].includes(note.tuplet.size));}
     else {assert.ok(figures[note.length]);assert.equal(noteDuration(note),figureDefinitions[note.length].duration);if(note.length===.5)semis++;}

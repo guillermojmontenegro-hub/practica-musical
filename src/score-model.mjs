@@ -72,7 +72,7 @@ export function createScoreEditor(measures,{capacity,unit,pitchFromPosition,allo
         let replacement;
         if(nextSize) {
           replacement=tupletNotes(nextSize,length,current.pitch,groupId++);
-          const meta=replacement[0].tuplet;Object.assign(meta,{baseSpan:base,dotted:nextDot,innerLength:Math.pow(2,Math.ceil(Math.log2(base/nextSize)))});
+          const meta=replacement[0].tuplet;Object.assign(meta,{baseSpan:base,dotted:nextDot});
           replacement.forEach(note=>{note.dotted=nextDot;});
         } else replacement=[{pitch:current.pitch,length,baseLength:base,dotted:nextDot}];
         if(notes[start+count-1]?.tie) replacement.at(-1).tie=true;
@@ -99,7 +99,7 @@ export function createScoreEditor(measures,{capacity,unit,pitchFromPosition,allo
       if(sumNotes(notes)-removed+length>capacity+epsilon) return fail('La figura no entra en este compás. Acortá o eliminá otra nota primero.');
       const replacement=size ? tupletNotes(size,length,pitch,groupId++) : [{pitch,length,...(dottedFigure?{baseLength:base,dotted:true}:{})}];
       if(modifier) {
-        Object.assign(replacement[0].tuplet,{baseSpan:base,dotted,innerLength:Math.pow(2,Math.ceil(Math.log2(base/size)))});
+        Object.assign(replacement[0].tuplet,{baseSpan:base,dotted});
         replacement.forEach(note=>{note.dotted=dotted;});
       }
       if(selected&&notes[start+count-1]?.tie) replacement.at(-1).tie=true;

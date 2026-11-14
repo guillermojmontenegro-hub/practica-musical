@@ -169,6 +169,7 @@ export function initExerciseUI(advance,practiceActive) {
     $('editor').staffDraft = staffDraft;
     $('editor').saveStaffDraft = saveStaffDraft;
     if (part.editor) part.editor($('editor'));
+    $('notation').scrollLeft=0;
     $('answers').replaceChildren(...(part.options || []).map((option,index) => {
       const button = document.createElement('button');
       const letter = document.createElement('span');

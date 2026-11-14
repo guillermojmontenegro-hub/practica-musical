@@ -81,3 +81,11 @@ La barra muestra negra, corchea, semicorchea y fusa, de mayor a menor duración.
 Los cambios que se suben a `main` se publican mediante la integración de GitHub con Vercel.
 
 La configuración `vercel.json` compila la aplicación con Vite y publica `dist/`. La aplicación funciona como sitio estático y no necesita variables de entorno de servidor. El repositorio incluye el código fuente y las pruebas; las credenciales, dependencias y archivos generados quedan excluidos.
+
+## Consistencia del grabado musical
+
+`src/notation-spec.mjs` determina las figuras y las proporciones desde la duración efectiva de cada grupo. Los cuatrillos que ocupan tres corcheas se escriben como cuatro corcheas con el número 4; las subdivisiones regulares no reciben una indicación de grupo irregular. Los grupos se unen con sus propias barras y se muestra el número simple, evitando proporciones automáticas como 4:6.
+
+La referencia y la transcripción comparten la anchura de los compases. Las dos voces se alinean mediante VexFlow y las marcas de pulso siguen las posiciones de las notas. Al cambiar de ejercicio, el pentagrama vuelve al inicio para que se vean la clave y la armadura.
+
+Las pruebas de correlación comparan, nota por nota, los ticks que realmente calcula VexFlow con las duraciones usadas por el audio, en ambas voces y en 1.600 ejercicios generados. También se verifican los modificadores n y puntillo, las ligaduras entre compases y los grupos incompletos.

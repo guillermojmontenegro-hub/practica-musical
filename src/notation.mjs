@@ -1,7 +1,8 @@
 import React, { useLayoutEffect, useRef } from 'react';
 import { createRoot } from 'react-dom/client';
 import { flushSync } from 'react-dom';
-import { Renderer, Stave, StaveNote, Formatter, Voice, Beam, Tuplet, StaveTie, Dot, Glyph, TimeSignature, Fraction } from 'vexflow';
+import { Renderer, Stave, StaveNote, Formatter, Voice, Beam, Tuplet, StaveTie, Dot, Glyph, TimeSignature } from 'vexflow';
+import { noteSpelling, tupletRanges } from './notation-spec.mjs';
 import { clefs, mod, figureDefinitions } from './music.mjs';
 
 // Keep notation as data until the React component commits.
@@ -9,11 +10,10 @@ export function staff(options) { return structuredClone(options); }
 export function pitchKey(pitch) {
   return `${['c','d','e','f','g','a','b'][mod(pitch,7)]}/${4+Math.floor(pitch/7)}`;
 }
-export function noteDuration(note) {
-  if(note.tuplet) return String(8/(note.tuplet.innerLength??(note.tuplet.size<=3?1:.5)))+(note.dotted?'d':'');
-  const figure=figureDefinitions[note.length];
-  if(!figure) throw new Error(`Figura sin representación: ${note.length}`);
-  return figure.duration;
+export function noteDuration(note) { return noteSpelling(note).duration; }
+export function scoreBarWidth(score) {
+  const sources=[score.measures||[],score.secondaryMeasures||[]];
+  return Math.max(210,...sources.flatMap(bars=>bars.map(notes=>notes.length*34+28)));
 }
 const svgNS = 'http://www.w3.org/2000/svg';
 function overlay(svg, tag, attributes) {
@@ -29,7 +29,7 @@ export function drawStaff(host, score) {
   const sources=secondary?[measures,secondary]:[measures];
   host.replaceChildren();
   const header=105+signs.length*20;
-  const barWidth=Math.max(210,...sources.flatMap(bars=>bars.map(notes=>notes.length*34+28)));
+  const barWidth=score.layoutBarWidth??scoreBarWidth({...score,secondaryMeasures:secondary});
   const count=Math.max(1,measures.length),width=Math.max(590,header+barWidth*count+15),height=secondary?300:180;
   const renderer=new Renderer(host,Renderer.Backends.SVG);renderer.resize(width,height);
   const context=renderer.getContext();context.setFillStyle('currentColor').setStrokeStyle('currentColor');
@@ -40,18 +40,15 @@ export function drawStaff(host, score) {
   function engrave(source,voice) {
     const notes=source.map(note=>{
       const result=new StaveNote({clef:voice===0&&clef==='fa'&&!rhythm?'bass':'treble',keys:voice===1?['b/4/x2']:[pitchKey(note.pitch)],duration:noteDuration(note),...(voice===1?{stem_direction:-1}:{auto_stem:true})});
-      if(note.dotted||(!note.tuplet&&figureDefinitions[note.length]?.dot)) Dot.buildAndAttach([result]);
+      if(noteSpelling(note).dots) Dot.buildAndAttach([result]);
       return result;
     });
-    const tuplets=[];
-    for(let n=0;n<source.length;n++) if(source[n].tuplet) {
-      const group=source[n].tuplet,size=group.size;if(n+size>source.length)continue;
-      const base=parseInt(noteDuration(source[n]),10),span=group.baseSpan??group.span??meter.unit;
-      const occupied=span*base/8;
-      if(size!==occupied)tuplets.push(new Tuplet(notes.slice(n,n+size),{num_notes:size,notes_occupied:occupied,bracketed:true,...(voice===1?{location:Tuplet.LOCATION_BOTTOM}:{})}));
-      n+=size-1;
-    }
-    return {notes,tuplets};
+    const ranges=tupletRanges(source);
+    const tuplets=ranges.filter(range=>range.irregular).map(range=>{
+      const tuplet=new Tuplet(notes.slice(range.start,range.end),{num_notes:range.size,notes_occupied:range.occupied,bracketed:true,ratioed:false,...(voice===1?{location:Tuplet.LOCATION_BOTTOM}:{})});
+      return {tuplet,range};
+    });
+    return {notes,tuplets,ranges};
   }
   for(let bar=0;bar<count;bar++) {
     const x=bar===0?10:header+bar*available,end=header+(bar+1)*available;
@@ -64,20 +61,57 @@ export function drawStaff(host, score) {
         if(showMeter)new TimeSignature(`${meter.top}/${meter.bottom}`).setStave(stave).setX(53+signs.length*20).setContext(context).draw();
       }
       stave.setNoteStartX(header+bar*available+12);
-      const {notes,tuplets}=engrave(bars[bar]||[],voice);
+      const source=bars[bar]||[];
+      const {notes,tuplets,ranges}=engrave(source,voice);
       const music=notes.length?new Voice({num_beats:meter.top,beat_value:meter.bottom}).setStrict(false).addTickables(notes):null;
-      rendered[voice].push(notes);return {notes,tuplets,music,stave};
+      rendered[voice].push(notes);return {notes,tuplets,ranges,source,music,stave};
     });
     const voices=stacks.map(stack=>stack.music).filter(Boolean);
     if(voices.length){const formatter=new Formatter();voices.forEach(voice=>formatter.joinVoices([voice]));formatter.format(voices,available-35);}
-    stacks.forEach(({notes,tuplets,music,stave},voice)=>{
+    stacks.forEach(({notes,tuplets,ranges,source,music,stave},voice)=>{
       if(!music)return;
-      const beams=Beam.generateBeams(notes,{groups:[new Fraction(meter.unit,8)],...(voice===1?{maintain_stem_directions:true}:{})});
-      music.draw(context,stave);beams.forEach(beam=>beam.setContext(context).draw());tuplets.forEach(tuplet=>tuplet.setContext(context).draw());
+      // Beam each irregular group as a unit and keep ordinary beams inside beats.
+      const beams=[];let run=[],offset=0,runBeat=-1;
+      const flush=()=>{if(run.length>1)beams.push(new Beam(run,voice===0));run=[];};
+      const byStart=new Map(ranges.map(range=>[range.start,range]));
+      for(let index=0;index<notes.length;index++){
+        const range=byStart.get(index);
+        if(range){
+          flush();const group=notes.slice(range.start,range.end);
+          if(group.length>1&&group.every(note=>parseInt(note.getDuration(),10)>=8))beams.push(new Beam(group,voice===0));
+          offset+=range.span;index=range.end-1;continue;
+        }
+        const beat=Math.floor((offset+1e-8)/meter.unit),short=parseInt(notes[index].getDuration(),10)>=8;
+        if(!short||beat!==runBeat)flush();
+        if(short){run.push(notes[index]);runBeat=beat;}
+        offset+=source[index].length;
+        if(Math.abs(offset/meter.unit-Math.round(offset/meter.unit))<1e-8)flush();
+      }
+      flush();
+      music.draw(context,stave);beams.forEach(beam=>beam.setContext(context).draw());
+      tuplets.forEach(({tuplet,range})=>{
+        const group=notes.slice(range.start,range.end);
+        const beamed=group.every(note=>note.hasBeam());
+        tuplet.setBracketed(!beamed).setRatioed(false).setTupletLocation(group[0].getStemDirection()===-1?Tuplet.LOCATION_BOTTOM:Tuplet.LOCATION_TOP);
+        const element=context.openGroup('score-tuplet');
+        element.setAttribute('data-tuplet-size',String(range.size));element.setAttribute('data-tuplet-occupied',String(range.occupied));element.setAttribute('data-tuplet-label',String(range.size));element.setAttribute('data-tuplet-span',String(range.span));element.setAttribute('data-tuplet-voice',String(voice));element.setAttribute('data-tuplet-bar',String(bar));
+        tuplet.setContext(context).draw();context.closeGroup();
+      });
     });
     guides.forEach(pitch=>overlay(svg,'path',{class:'staff-guide',d:`M${header+bar*available} ${y(pitch)}H${end}`}));
-    if(secondary) for(let beat=0;beat<meter.beats;beat++) {
-      const text=document.createElementNS(svgNS,'text');text.setAttribute('x',String(header+bar*available+12+beat*(available-35)/meter.beats));text.setAttribute('y','248');text.setAttribute('class','pulse-label');text.setAttribute('data-pulse',String(beat+1));text.setAttribute('data-pulse-bar',String(bar));text.textContent=String(beat+1);svg.append(text);
+    if(secondary){
+      const anchors=[];
+      stacks.forEach(({source,notes})=>{let offset=0;source.forEach((note,index)=>{anchors.push({offset,x:notes[index].getNoteHeadBeginX()+4});offset+=note.length;});});
+      anchors.push({offset:meter.beats*meter.unit,x:end-12});anchors.sort((a,b)=>a.offset-b.offset);
+      for(let beat=0;beat<meter.beats;beat++){
+        const offset=beat*meter.unit,exact=anchors.find(anchor=>Math.abs(anchor.offset-offset)<1e-8);
+        let x=exact?.x;
+        if(x===undefined){
+          const before=anchors.filter(anchor=>anchor.offset<offset).at(-1),after=anchors.find(anchor=>anchor.offset>offset);
+          x=before&&after?before.x+(after.x-before.x)*(offset-before.offset)/(after.offset-before.offset):header+bar*available+12+beat*(available-35)/meter.beats;
+        }
+        const text=document.createElementNS(svgNS,'text');text.setAttribute('x',String(x));text.setAttribute('y','248');text.setAttribute('class','pulse-label');text.setAttribute('data-pulse',String(beat+1));text.setAttribute('data-pulse-bar',String(bar));text.textContent=String(beat+1);svg.append(text);
+      }
     }
   }
   if(secondary)for(const [voice,label] of [[0,'Voz 1'],[1,'Voz 2']]){
@@ -86,7 +120,7 @@ export function drawStaff(host, score) {
   sources.forEach((bars,voice)=>bars.forEach((notes,bar)=>notes.forEach((note,index)=>{
     if(!note.tie)return;
     const first=rendered[voice][bar][index],last=rendered[voice][bar][index+1]||rendered[voice][bar+1]?.[0];
-    if(last&&note.pitch===(notes[index+1]||bars[bar+1]?.[0])?.pitch)new StaveTie({first_note:first,last_note:last,first_indices:[0],last_indices:[0]}).setContext(context).draw();
+    if(last&&note.pitch===(notes[index+1]||bars[bar+1]?.[0])?.pitch){const group=context.openGroup('score-tie');group.setAttribute('data-tie-voice',String(voice));group.setAttribute('data-tie-bar',String(bar));new StaveTie({first_note:first,last_note:last,first_indices:[0],last_indices:[0]}).setContext(context).draw();context.closeGroup();}
   })));
   if(edit){
     const areas=edit==='signs'?[{x:44,width:width-59}]:measures.map((_,bar)=>({x:header+bar*available,width:available}));
@@ -114,10 +148,12 @@ export function setNotation(score) {
 export function showSolution(score,compare=false) {
   const before={...current,edit:false,editNotes:false,selected:null};
   current=score;
+  const layoutBarWidth=Math.max(scoreBarWidth(before),scoreBarWidth(score));
+  const submitted={...before,layoutBarWidth},reference={...score,layoutBarWidth};
   root ||= createRoot(document.getElementById('notation'));
   flushSync(()=>root.render(compare ? React.createElement(React.Fragment,null,
-    React.createElement('p',{className:'staff-label'},'Tu transcripción'),React.createElement(Staff,{score:before}),
-    React.createElement('p',{className:'staff-label'},'Referencia'),React.createElement(Staff,{score})) : React.createElement(Staff,{score})));
+    React.createElement('p',{className:'staff-label'},'Tu transcripción'),React.createElement(Staff,{score:submitted}),
+    React.createElement('p',{className:'staff-label'},'Referencia'),React.createElement(Staff,{score:reference})) : React.createElement(Staff,{score})));
 }
 
 // Draw the same engraved symbols used in scores, without relying on a music font installed by the user.
