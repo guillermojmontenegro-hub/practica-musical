@@ -58,7 +58,7 @@ El valor de aciertos se muestra dentro de la tarjeta del ejercicio actual; el so
 
 La paleta, los símbolos y el audio comparten las definiciones de duración, incluidas las semicorcheas. Las transcripciones melódicas pueden incluir síncopas, dosillos, tresillos, cuatrillos, quintillos y ligaduras entre compases. La evaluación compara las alturas y los ataques sonoros; una ligadura prolonga el sonido sin volver a atacarlo. La edición permite cambiar notas existentes, eliminar notas o grupos y deshacer, con un borrador de acciones que se conserva al recargar.
 
-En polirritmia se dibujan **dos pentagramas**, con los ataques de ambas voces alineados por su posición temporal. En 6/8 se identifican dos pulsos, cada uno con tres corcheas; los cuatro golpes del acompañamiento son dos golpes por pulso. El acompañamiento tiene un timbre diferenciado. La cuenta inicial marca los pulsos del compás. Tres corcheas regulares dentro de un pulso de 6/8 no se rotulan como tresillo irregular.
+En polirritmia se dibujan **dos pentagramas**, con los ataques de ambas voces alineados por su posición temporal. En 6/8 se identifican dos pulsos, cada uno con tres corcheas. Ambas voces tienen ritmos variados e independientes. En polirritmia, un pulso contiene tres ataques de la primera voz contra dos de la segunda; el resto desarrolla otros patrones. La cuenta inicial marca los pulsos del compás. Tres corcheas regulares dentro de un pulso de 6/8 no se rotulan como tresillo irregular.
 
 Las pruebas de correlación recorren 1.600 ejercicios generados y contrastan las figuras editables, la notación, los ataques, los silencios entre ataques, las duraciones y el acompañamiento. Otra prueba verifica la programación de esos eventos en Web Audio a un tempo concreto.
 
@@ -92,7 +92,7 @@ Las pruebas de correlación comparan, nota por nota, los ticks que realmente cal
 
 ## Instrumentos muestreados
 
-Los ejercicios usan smplr y muestras FluidR3 GM para piano, guitarra de nylon, flauta, clarinete y marimba. Se cargan a demanda y se reutilizan durante la sesión. Si la carga falla o supera 12 segundos, se usa el sintetizador local. Los ejercicios rítmicos a dos voces usan bombo para la voz 1 y platillo para la voz 2, con muestras TR-808 servidas con la app; el conteo inicial conserva su pulso separado. Créditos y licencias en `public/sonidos.html`.
+Los ejercicios usan smplr y muestras FluidR3 GM para piano, guitarra de nylon, flauta, clarinete y marimba. Se cargan a demanda y se reutilizan durante la sesión. Si la carga falla o supera 12 segundos, se usa el sintetizador local. Los ejercicios rítmicos a dos voces usan redoblante para la voz 1 y platillo para la voz 2, con muestras TR-808 servidas con la app; el conteo inicial conserva su pulso separado. Las muestras de percusión se calibran por el nivel RMS del ataque y usan la misma intensidad en ambas voces. Créditos y licencias en `public/sonidos.html`.
 
 El Pomodoro de ejercicios de la app se detiene en 00:00 sin ocultar ni reemplazar la consigna, la transcripción o su corrección. El cambio de bloque espera a que se termine el ejercicio y se pulse Siguiente ejercicio (o se lo omita). Esta espera también se conserva al recargar; el tiempo adicional no aumenta el contador de práctica.
 

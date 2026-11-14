@@ -9,3 +9,9 @@ export function instrumentOutput(context) {
   limiter.attack.value=.001;limiter.release.value=.12;
   limiter.connect(context.destination);return limiter;
 }
+
+// Match the rendered attack RMS (first 120 ms), including the playback envelope.
+export function percussionOutput(context,instrument,destination) {
+  const gain=context.createGain();gain.gain.value=instrument==='snare'?3.04:1.66;
+  gain.connect(destination);return gain;
+}

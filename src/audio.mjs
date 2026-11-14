@@ -1,12 +1,12 @@
 import {claimAudio} from './audio-session.mjs';
-import {melodicSampleOptions,sampleVelocity,instrumentOutput} from './audio-levels.mjs';
+import {melodicSampleOptions,sampleVelocity,instrumentOutput,percussionOutput} from './audio-levels.mjs';
 const instruments = {
   piano: {name:'Piano', attack:.007, sustain:.27, partials:[[1,1],[2,.38],[3,.22],[4.01,.12],[6.02,.06]], decay:.20},
   guitar: {name:'Guitarra', attack:.004, sustain:.19, partials:[[1,1],[2,.5],[3,.27],[4,.19],[5,.11]], decay:.14},
   flute: {name:'Flauta', attack:.055, sustain:.86, partials:[[1,1],[2,.11],[3,.075]], decay:.30},
   clarinet: {name:'Clarinete', attack:.033, sustain:.78, partials:[[1,1],[3,.37],[5,.14],[7,.05]], decay:.23},
   marimba: {name:'Marimba', attack:.003, sustain:.07, partials:[[1,1],[4,.32],[9.02,.14]], decay:.10},
-  kick: {name:'Bombo',percussion:true,attack:.003,sustain:.05,partials:[[1,1],[2,.2]],decay:.08},
+  snare: {name:'Redoblante',percussion:true,attack:.003,sustain:.05,partials:[[1,1],[2,.2]],decay:.08},
   cymbal: {name:'Platillo',percussion:true,attack:.002,sustain:.15,partials:[[1,.6],[1.48,.4],[2.13,.3],[3.19,.2]],decay:.06},
   click: {attack:.002, sustain:.09, partials:[[1,1],[2.4,.23]], decay:.025}
 };
@@ -25,7 +25,7 @@ async function prepareExerciseAudio(events,{instrument}) {
     if(!loading.has(name)) loading.set(name,(async()=>{
       const {Soundfont,Sampler}=await import('smplr');
       sampleOutput ||= instrumentOutput(audio);
-      const player=instruments[name]?.percussion?Sampler(audio,{destination:sampleOutput,detune:0,lpfCutoffHz:20000,decayTime:.025,buffers:{C4:`/sounds/${name}.m4a`},volume:name==='cymbal'?100:90}):Soundfont(audio,{destination:sampleOutput,instrument:sampleNames[name],kit:'FluidR3_GM',
+      const player=instruments[name]?.percussion?Sampler(audio,{destination:percussionOutput(audio,name,sampleOutput),detune:0,lpfCutoffHz:20000,decayTime:.025,buffers:{C4:`/sounds/${name}.m4a`},volume:100}):Soundfont(audio,{destination:sampleOutput,instrument:sampleNames[name],kit:'FluidR3_GM',
         notesToLoad:{notes:Array.from({length:61},(_,i)=>36+i),fallback:'nearest'},
         ...melodicSampleOptions(name),loadLoopData:true});
       try {await player.ready;sampled.set(name,player);return true;}

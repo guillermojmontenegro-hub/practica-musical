@@ -297,3 +297,8 @@ button,summary{-webkit-tap-highlight-color:transparent}
 .answer-selectors label{display:grid;gap:7px;min-width:0;font-size:13px;color:var(--muted)}
 .answer-selectors .custom-select-host{width:100%}
 @media(max-width:380px){.answer-selectors{grid-template-columns:minmax(0,1fr)}}
+
+.app-sidebar{display:flex;flex-direction:column;min-height:calc(100dvh - 64px)}
+.app-sidebar>*{flex-shrink:0}
+.sidebar-footer{margin-top:auto;padding-top:20px;font-size:11px;line-height:1.5;color:var(--muted)}
+.sidebar-footer a{color:inherit;text-underline-offset:3px}

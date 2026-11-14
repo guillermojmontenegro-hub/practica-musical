@@ -43,15 +43,34 @@ test('every generated rhythm and melody figure has a matching tool and engraving
     else expected.push({pitch:midi(note.pitch),offset,length:note.length/meter.unit});
     offset+=note.length/meter.unit;
    });
-   const events=question.events.filter(event=>!event[4]||event[4]==='kick');
+   const events=question.events.filter(event=>!event[4]||event[4]==='snare');
    if(mode==='dictation') events.shift(); // Initial tonic, before the count-in.
    assert.equal(events.length,expected.length);
    expected.forEach((note,index)=>{
-    const actual=events[index];assert.equal(actual[0],score.secondaryMeasures?36:note.pitch);assert.ok(Math.abs(actual[1]-note.offset)<1e-8);
+    const actual=events[index];assert.equal(actual[0],score.secondaryMeasures?38:note.pitch);assert.ok(Math.abs(actual[1]-note.offset)<1e-8);
     assert.ok(Math.abs(actual[2]-note.length*.96)<1e-8);
    });
    const backing=question.events.filter(event=>event[4]==='cymbal');
    const secondary=score.secondaryMeasures;
+   if(secondary){
+    secondary.forEach((bar,index)=>{
+     assert.ok(new Set(bar.map(note=>note.length)).size>1,'second voice must have a varied rhythm');
+     const rhythm=notes=>notes.map(({length,tie})=>`${length}:${Boolean(tie)}`).join(',');
+     assert.notEqual(rhythm(bar),rhythm(score.measures[index]),'voices must have different rhythms');
+     if(mode==='poly'){
+      let offset=0;
+      score.measures[index].forEach(note=>{
+       if(note.tuplet?.size===3&&Math.abs(offset/meter.unit-Math.round(offset/meter.unit))<1e-8){
+        let lowerOffset=0,count=0;
+        bar.forEach(lower=>{if(lowerOffset>=offset-1e-8&&lowerOffset<offset+meter.unit-1e-8)count++;lowerOffset+=lower.length;});
+        assert.equal(count,2,'3 against 2 must share the same pulse');
+       }
+       offset+=note.length;
+      });
+     }
+    });
+    assert.ok(question.events.filter(event=>['snare','cymbal'].includes(event[4])).every(event=>event[3]===.19));
+   }
    const expectedBack=[];let backOffset=meter.beats;
    if(secondary) secondary.flat().forEach(note=>{expectedBack.push({pitch:midi(note.pitch),offset:backOffset,length:note.length/meter.unit});backOffset+=note.length/meter.unit;});
    assert.equal(backing.length,expectedBack.length);

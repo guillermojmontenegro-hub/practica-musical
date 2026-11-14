@@ -5,7 +5,7 @@ test('all sampled melodic and percussion instruments load and schedule buffers r
  const result=await page.evaluate(async()=>{
   const engine=await import('/src/audio.mjs');await engine.unlockAudio();
   const output=[];
-  for(const instrument of ['piano','guitar','flute','clarinet','marimba','kick','cymbal']){
+  for(const instrument of ['piano','guitar','flute','clarinet','marimba','snare','cymbal']){
    const loaded=await engine.prepareExerciseAudio([[60,0,.2,.16,instrument]],{instrument});
    let buffers=0,oscillators=0;
    const bp=AudioContext.prototype.createBufferSource,op=AudioContext.prototype.createOscillator;

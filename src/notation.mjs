@@ -114,7 +114,7 @@ export function drawStaff(host, score) {
       }
     }
   }
-  if(secondary)for(const [voice,label] of [[0,'Voz 1 · Bombo'],[1,'Voz 2 · Platillo']]){
+  if(secondary)for(const [voice,label] of [[0,'Voz 1 · Redoblante'],[1,'Voz 2 · Platillo']]){
     const text=document.createElementNS(svgNS,'text');text.setAttribute('x','10');text.setAttribute('y',String(18+voice*100));text.setAttribute('class','voice-label');text.textContent=label;svg.append(text);
   }
   sources.forEach((bars,voice)=>bars.forEach((notes,bar)=>notes.forEach((note,index)=>{

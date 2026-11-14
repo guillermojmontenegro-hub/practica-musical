@@ -18,3 +18,23 @@ test('sampled chords have an audible output without clipping',async({page})=>{
  expect(levels).toHaveLength(5);
  for(const {instrument,rms,peak} of levels){expect(rms,instrument).toBeGreaterThan(.045);expect(peak,instrument).toBeLessThan(.98);}
 });
+
+test('snare and cymbal have matching attack levels and headroom',async({page})=>{
+ await page.goto('/');
+ const levels=await page.evaluate(async()=>{
+  const {Sampler}=await import('/node_modules/smplr/dist/index.mjs');
+  const {percussionOutput,instrumentOutput,sampleVelocity}=await import('/src/audio-levels.mjs');
+  const levels=[];
+  for(const instrument of ['snare','cymbal']){
+   const context=new OfflineAudioContext(1,24000,48000);
+   const player=Sampler(context,{destination:percussionOutput(context,instrument,instrumentOutput(context)),detune:0,lpfCutoffHz:20000,decayTime:.025,volume:100,buffers:{C4:`/sounds/${instrument}.m4a`}});await player.ready;
+   player.start({note:60,time:.02,duration:.3,velocity:sampleVelocity(.19,true)});
+   const audio=await context.startRendering(),samples=audio.getChannelData(0).slice(960,6720);
+   const rms=Math.sqrt(samples.reduce((sum,n)=>sum+n*n,0)/samples.length),peak=samples.reduce((max,n)=>Math.max(max,Math.abs(n)),0);
+   levels.push({rms,peak});player.dispose();
+  }
+  return levels;
+ });
+ expect(Math.abs(20*Math.log10(levels[0].rms/levels[1].rms))).toBeLessThan(1);
+ levels.forEach(({rms,peak})=>{expect(rms).toBeGreaterThan(.04);expect(peak).toBeLessThan(.98);});
+});

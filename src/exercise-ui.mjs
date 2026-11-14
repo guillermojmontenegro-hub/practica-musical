@@ -54,7 +54,7 @@ export function initExerciseUI(advance,practiceActive) {
   function displaySound(current) {
     const name = current ? instruments[current.instrument].name :
       $('random-instrument').checked ? 'Instrumento aleatorio' : instruments[sound.instrument].name;
-    $('sound-playing').textContent = modes[mode].play ? `${question?.events?.some(event=>event[4]==='cymbal')?'Bombo · Platillo':name} · ${sound.bpm} BPM` : '';
+    $('sound-playing').textContent = modes[mode].play ? `${question?.events?.some(event=>event[4]==='cymbal')?'Redoblante · Platillo':name} · ${sound.bpm} BPM` : '';
   }
 
   function stopAudio() {

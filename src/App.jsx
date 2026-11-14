@@ -14,7 +14,6 @@ function SoundSettings() {
     <label>Tempo <input id="tempo" type="number" min="40" max="220" defaultValue="90" /> BPM</label>
     <label><input type="checkbox" id="random-tempo" /> Tempo aleatorio</label>
   </div>
-  <p className="editor-help"><a href="/sonidos.html" target="_blank" rel="noreferrer">Créditos de los sonidos</a></p>
   <details>
     <summary>Metrónomo</summary>
     <div className="practice-controls">
@@ -119,7 +118,7 @@ export default function App() {
     function keys(event) {
       if(event.key==='Escape') {event.preventDefault();closeMenu();return;}
       if(!compact||event.key!=='Tab') return;
-      const focusable=[...sidebar.current.querySelectorAll('button:not(:disabled),summary,input:not(:disabled),select:not(:disabled),[tabindex="0"]')].filter(node=>node.getClientRects().length);
+      const focusable=[...sidebar.current.querySelectorAll('a[href],button:not(:disabled),summary,input:not(:disabled),select:not(:disabled),[tabindex="0"]')].filter(node=>node.getClientRects().length);
       const first=focusable[0],last=focusable.at(-1);
       if(event.shiftKey&&document.activeElement===first) {event.preventDefault();last.focus();}
       else if(!event.shiftKey&&document.activeElement===last) {event.preventDefault();first.focus();}
@@ -164,6 +163,7 @@ export default function App() {
         </nav>
         <SidebarControls />
         <p className="feedback" id="cookie-status" role="status" hidden>El navegador no permite guardar cookies para esta página. Para conservar tu progreso, abrí la app desde una dirección web con las cookies habilitadas.</p>
+        <footer className="sidebar-footer"><a href="/sonidos.html" target="_blank" rel="noreferrer">Créditos de los sonidos</a></footer>
       </aside>
       <main className="workspace-main" inert={compact&&sidebarOpen}>
         <div id="practice-page" tabIndex={-1} aria-label="Ejercicio actual" hidden={page!=='practice'}><p id="workspace-session-status" className="workspace-session-status" role="status" hidden></p><PracticeContent /></div>
