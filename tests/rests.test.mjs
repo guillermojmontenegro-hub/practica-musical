@@ -15,10 +15,10 @@ test('whole and half notes and all rests retain the durations actually engraved'
  }
 });
 test('silence combines with dot and n, supports undo, and cannot carry a tie',()=>{
- const bars=[[{pitch:0,length:2,tie:true},{pitch:0,length:2}]],model=editor(bars);
+ const bars=[[{pitch:0,length:2,tie:true},{pitch:0,length:1}]],model=editor(bars);
  model.apply(0,0,'rest',1);assert.equal(bars[0][0].tie,undefined);
  assert.equal(model.apply(0,0,'tie',0).ok,false);
- model.apply(0,0,'dot',1);assert.equal(bars[0][1].rest,true);assert.equal(bars[0][1].length,3);
+ model.apply(0,0,'dot',1);assert.equal(bars[0][1].rest,true);assert.equal(bars[0][1].length,1.5);
  for(const size of [2,3,4,5]){
   model.apply(0,0,`n${size}`,1);assertWrittenDurations(bars[0]);
   assert.ok(bars[0].slice(1).every(note=>note.rest));

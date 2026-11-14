@@ -52,9 +52,9 @@ function staffEditor(container,{tools,draw,ready,place,undo,status,editable=fals
   const groups=document.createElement('select');groups.className='group-tool';groups.setAttribute('aria-label','Grupo irregular');groups.title='Grupo irregular';
   groups.add(new Option('ⁿ',''));
   for(const [value,label] of grouped) {const option=new Option(value.slice(5),`n${value.slice(5)}`);option.title=label;option.setAttribute('aria-label',label);groups.add(option);}
-  groups.addEventListener('change',()=>{const next=Number(groups.value.slice(1))||0;if(next===division){update();return;}if(selected!==null){edit(next?`n${next}`:'ungroup');refreshSelection();}else{division=next;update();}});
+  groups.addEventListener('change',()=>{const next=Number(groups.value.slice(1))||0;if(next===division){update();return;}if(selected!==null){if(edit(next?`n${next}`:'ungroup'))refreshSelection();}else{division=next;update();}});
   if(grouped.length) toolbar.append(groups);
-  const dot=button('Puntillo','·',()=>{if(selected!==null){edit('dot');refreshSelection();}else{dotted=!dotted;update();}});
+  const dot=button('Puntillo','·',()=>{if(selected!==null){if(edit('dot'))refreshSelection();}else{dotted=!dotted;update();}});
   if(tools.some(([value])=>Number(value)>0))toolbar.insertBefore(dot,grouped.length?groups:null);
   const rest=button('Silencio','',()=>{if(selected!==null){edit('rest');refreshSelection();}else{silent=!silent;update();}});
   restIcon(rest);

@@ -16,7 +16,18 @@ test('every generated rhythm and melody figure has a matching tool and engraving
   for(family of ['simple','compound']) for(heights of ['1','2']) for(const mode of ['syncopation','poly','tuplet','dictation']) for(let seed=0;seed<100;seed++) {
    const question=withSeed(seed*8179+9,()=>mode==='dictation'?melodyQuestion('dictation'):rhythmQuestion(mode));
    const score=question.steps[0].solution,{meter}=score;
-   for(const bar of [...score.measures,...(score.secondaryMeasures||[])]){assert.ok(Math.abs(sumNotes(bar)-meter.beats*meter.unit)<1e-8);assertWrittenDurations(bar);}
+   for(const bar of [...score.measures,...(score.secondaryMeasures||[])]){assert.ok(Math.abs(sumNotes(bar)-meter.beats*meter.unit)<1e-8);assertWrittenDurations(bar);
+    let offset=0;
+    for(let index=0;index<bar.length;index++){
+     const note=bar[index];
+     if(note.tuplet){
+      const group=bar.slice(index,index+note.tuplet.size),span=sumNotes(group);
+      assert.ok(Math.abs(offset/meter.unit-Math.round(offset/meter.unit))<1e-8,'generated group must start at a pulse');
+      assert.ok(Math.abs(span-meter.unit)<1e-8,'generated group must occupy exactly one pulse');
+      offset+=span;index+=group.length-1;
+     }else offset+=note.length;
+    }
+   }
    for(const note of score.measures.flat()) {
     if(note.tuplet) {groups++;assert.ok([2,3,4,5].includes(note.tuplet.size));}
     else {assert.ok(figures[note.length]);assert.equal(noteDuration(note),figureDefinitions[note.length].duration);if(note.length===.5)semis++;}

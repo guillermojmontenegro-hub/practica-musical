@@ -1,7 +1,22 @@
 import { figureDefinitions } from './music.mjs';
 const epsilon=1e-8;
 export const sumNotes=notes=>notes.reduce((sum,note)=>sum+note.length,0);
-export const tupletSpan=(size,unit)=>size===2||size===4 ? 3 : size===3 ? 2 : unit;
+export const tupletSpan=(_size,unit)=>unit;
+export function groupsFitPulses(measures,unit) {
+  return measures.every(notes=>{
+    let offset=0;
+    for(let index=0;index<notes.length;index++){
+      const group=notes[index].tuplet;
+      if(group){
+        const span=sumNotes(notes.slice(index,index+group.size));
+        const endOfPulse=(Math.floor((offset+epsilon)/unit)+1)*unit;
+        if(offset+span>endOfPulse+epsilon)return false;
+        offset+=span;index+=group.size-1;
+      }else offset+=notes[index].length;
+    }
+    return true;
+  });
+}
 export const groupTools=[['group2','Dosillo'],['group3','Tresillo'],['group4','Cuatricillo'],['group5','Quintillo']];
 export function tupletNotes(size,span,pitch=6,id=0) {
   const tuplet={size,span,id};
@@ -33,10 +48,16 @@ export function createScoreEditor(measures,{capacity,unit,pitchFromPosition,allo
   const history=[];
   let groupId=1;
   const fail=message=>({ok:false,message});
-  function commit(before,index=null) {history.push(before);repairTies(measures,capacity);return {ok:true,index};}
+  function commit(before,index=null) {
+    if(!groupsFitPulses(measures,unit)){
+      measures.splice(0,measures.length,...before);
+      return fail('El grupo irregular debe quedar completo dentro de un pulso.');
+    }
+    history.push(before);repairTies(measures,capacity);return {ok:true,index};
+  }
   return {
     measures,
-    ready:()=>measures.every(notes=>Math.abs(sumNotes(notes)-capacity)<epsilon),
+    ready:()=>groupsFitPulses(measures,unit)&&measures.every(notes=>Math.abs(sumNotes(notes)-capacity)<epsilon),
     apply(bar,position,tool,index=null) {
       const notes=measures[bar];
       if(!notes) return fail('Elegí un compás válido.');

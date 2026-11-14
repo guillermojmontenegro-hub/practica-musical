@@ -18,10 +18,10 @@ export function generateMelody(meter,pitches,tonic) {
       notes.push(...tupletNotes(size,tupletSpan(size,meter.unit),last,groupId++));
     }
     while(sumNotes(notes)<capacity-1e-8) {
-      const remaining=capacity-sumNotes(notes);
+      const offset=sumNotes(notes),remaining=capacity-offset;
       const choices=['0.5','0.5','1','1','2','2','3','group2','group3','group4','group5'].filter(value=>{
         const span=value.startsWith('group') ? tupletSpan(Number(value.slice(5)),meter.unit) : Number(value);
-        return span<=remaining+1e-8;
+        return span<=remaining+1e-8&&(!value.startsWith('group')||Math.abs(offset/meter.unit-Math.round(offset/meter.unit))<1e-8);
       });
       const tool=pick(choices);
       const newNotes=tool.startsWith('group') ? tupletNotes(Number(tool.slice(5)),tupletSpan(Number(tool.slice(5)),meter.unit),last,groupId++) : [{...regular(),length:Number(tool)}];
