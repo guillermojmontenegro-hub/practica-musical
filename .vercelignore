@@ -4,3 +4,7 @@ playwright-report
 .openai
 .git
 dist
+
+.env
+.env.*
+.vercel
