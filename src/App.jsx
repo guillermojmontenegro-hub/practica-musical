@@ -11,13 +11,13 @@ function SoundSettings() {
   <div className="practice-controls">
     <label>Instrumento <select id="instrument"></select></label>
     <label><input type="checkbox" id="random-instrument" /> Instrumento aleatorio</label>
-    <label>Tempo <input id="tempo" type="number" min="40" max="220" defaultValue="90" /> BPM</label>
+    <label>Tempo <input id="tempo" type="number" min="40" max="220" defaultValue="90" /> BPM <small id="tempo-unit" hidden></small></label>
     <label><input type="checkbox" id="random-tempo" /> Tempo aleatorio</label>
   </div>
   <details>
     <summary>Metrónomo</summary>
     <div className="practice-controls">
-      <label>Tempo <input id="metro-tempo" type="number" min="30" max="240" defaultValue="80" /> BPM</label>
+      <label>Tempo <input id="metro-tempo" type="number" min="30" max="240" defaultValue="80" /> BPM <small id="metro-unit">negra</small></label>
       <label>Compás <select id="metro-meter" defaultValue="4/4"><option>2/4</option><option>3/4</option><option>4/4</option><option>6/8</option><option>9/8</option><option>12/8</option></select></label>
       <label><input type="checkbox" id="metro-subdivision" /> Subdividir</label>
       <button type="button" className="next" id="metro-toggle" aria-pressed="false">Iniciar metrónomo</button>

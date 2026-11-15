@@ -1,3 +1,4 @@
+import {tempoUnitLabel} from './music.mjs';
 import {claimAudio} from './audio-session.mjs';
 import { setNotation, showSolution } from './notation.mjs';
 import { readStorage, writeCookie } from './storage.mjs';
@@ -54,7 +55,10 @@ export function initExerciseUI(advance,practiceActive) {
   function displaySound(current) {
     const name = current ? instruments[current.instrument].name :
       $('random-instrument').checked ? 'Instrumento aleatorio' : instruments[sound.instrument].name;
-    $('sound-playing').textContent = modes[mode].play ? `${question?.events?.some(event=>event[4]==='cymbal')?'Redoblante · Platillo':name} · ${sound.bpm} BPM` : '';
+    const meter=question?.notation?.meter;
+    const unit=meter?tempoUnitLabel(meter):'';
+    $('tempo-unit').textContent=unit;$('tempo-unit').hidden=!unit;
+    $('sound-playing').textContent = modes[mode].play ? `${question?.events?.some(event=>event[4]==='cymbal')?'Redoblante · Platillo':name} · ${sound.bpm} BPM${unit?' · '+unit:''}` : '';
   }
 
   function stopAudio() {

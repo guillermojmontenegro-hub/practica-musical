@@ -1,3 +1,4 @@
+import {tempoUnitLabel} from './music.mjs';
 import {claimAudio} from './audio-session.mjs';
 import { $ } from './dom.mjs';
 import { unlockAudio, newClickTrack } from './audio.mjs';
@@ -9,6 +10,8 @@ function initMetronome() {
   tempo.value = clamp(preferences.metroTempo,30,240,80);
   if (Array.from(meter.options).some(option=>option.value===preferences.metroMeter)) meter.value = preferences.metroMeter;
   subdivide.checked = Boolean(preferences.metroSubdivision);
+  const showUnit=()=>{$('metro-unit').textContent=tempoUnitLabel({unit:meter.value.endsWith('/8')?3:2});};
+  showUnit();
   let track, timer, step, nextTime, lease, generation = 0;
   const pending = new Set();
   function stop() {
@@ -63,6 +66,7 @@ function initMetronome() {
   }
   button.addEventListener('click',()=>{if (track) stop(); else start();});
   for (const input of [tempo,meter,subdivide]) input.addEventListener('change',()=>{
+    showUnit();
     tempo.value = clamp(tempo.value,30,240,80);
     Object.assign(preferences,{metroTempo:tempo.value,metroMeter:meter.value,metroSubdivision:subdivide.checked});
     savePreferences();

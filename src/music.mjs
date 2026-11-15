@@ -36,6 +36,7 @@ function selectMeter() {
   return pick(family === 'mixed' ? [...meters.simple,...meters.compound] : meters[family]);
 }
 
+export const tempoUnitLabel=meter=>meter.unit===3?'negra con puntillo':'negra';
 const meterLabel = meter => meter.top + '/' + meter.bottom;
 function countIn(meter) {
   return Array.from({length:meter.beats},(_,index)=>[index===0 ? 84 : 79,index,.09,.13,'click']);
