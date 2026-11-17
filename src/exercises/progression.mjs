@@ -4,9 +4,16 @@ import { answerFields } from '../answer-fields.mjs';
 import { assess } from '../grading.mjs';
 
 const scale = [0,2,4,5,7,9,11];
-const degrees = ['I','ii','iii','IV','V','vi'];
+// Every degree of the major scale can be an answer, including the diminished leading tone.
+const degrees = ['I','ii','iii','IV','V','vi','vii°'];
+// Triads built on every degree of the major scale: three major, three minor and the leading-tone diminished.
+const triads = [[0,4,7],[0,3,7],[0,3,7],[0,4,7],[0,4,7],[0,3,7],[0,3,6]];
+const chordSuffix = ['','m','m','','','m','°'];
+// Applied dominants resolve to these degrees; the diminished seventh degree is not a usable target.
+const secondaryTargets = degrees.slice(1,6);
 const keys = [[0,0],[2,1],[4,2],[5,3],[7,4],[9,5],[10,6],[3,2]];
-// Common diatonic phrases; an applied dominant may replace one chord according to the dominants option.
+// Common diatonic phrases closing on a dominant cadence; the cadential V may become vii°,
+// and an applied dominant may replace one chord according to the dominants option.
 const phrases = {
   4:[['I','IV','V','I'],['I','ii','V','I'],['I','vi','V','I']],
   5:[['I','vi','ii','V','I'],['I','IV','ii','V','I'],['I','vi','IV','V','I']],
@@ -31,14 +38,28 @@ function noteName(pitch, letter) {
   return letters[mod(letter,7)] + '♯'.repeat(Math.max(0,accidental)) + '♭'.repeat(Math.max(0,-accidental));
 }
 
+function chordOptions(mode,sevenths=false) {
+  return [...degrees,...(mode==='none' ? [] : secondaryTargets.map(degree=>(sevenths ? 'V⁷/' : 'V/')+degree))];
+}
+
 export function progressionQuestion({sevenths=false,oneOctave=true,chordCount=6,dominants='mixed'}={}) {
   chordCount = Object.hasOwn(phrases,chordCount) ? Number(chordCount) : 6;
   const dominantMode = Object.hasOwn(dominantModes,dominants) ? dominants : 'mixed';
   const [tonic,letter] = pick(keys);
   const phrase = [...pick(phrases[chordCount])];
+  // One cadence in four uses the leading-tone seventh degree in place of the dominant.
+  const leadingTone = pick([false,false,false,true]);
+  if (leadingTone) phrase[chordCount-2] = 'vii°';
+  const dominantCandidates = () => Array.from({length:chordCount-3},(_,index)=>index+1)
+    .filter(index=>!['I','vii°'].includes(phrase[index+1]));
   if (dominantMode !== 'none' && (dominantMode === 'always' || pick([false,false,false,true]))) {
-    // Preserve the opening tonic and final V–I cadence, and resolve immediately.
-    const candidates = Array.from({length:chordCount-3},(_,index)=>index+1).filter(index=>phrase[index+1]!=='I');
+    // Preserve the opening tonic and the closing cadence, and resolve immediately.
+    let candidates = dominantCandidates();
+    if (!candidates.length && leadingTone && dominantMode === 'always') {
+      // The shortest phrase resolves only through the cadential chord: keep V so the applied dominant fits.
+      phrase[chordCount-2] = 'V';
+      candidates = dominantCandidates();
+    }
     if (candidates.length) {
       const index = pick(candidates);
       phrase[index] = (sevenths ? 'V⁷/' : 'V/') + phrase[index+1];
@@ -50,13 +71,13 @@ export function progressionQuestion({sevenths=false,oneOctave=true,chordCount=6,
     const root = 48 + tonic + scale[degree] + (secondary ? 7 : 0);
     // Anchor the octave to the opening tonic, including keys other than C.
     const bass = 48 + tonic + mod(root-tonic,12) + (!oneOctave && index>0 ? pick([-12,0,12]) : 0);
-    const intervals = secondary ? (sevenths ? [0,4,7,10] : [0,4,7]) : [0,[1,2,5].includes(degree) ? 3 : 4,7];
+    const intervals = secondary ? (sevenths ? [0,4,7,10] : [0,4,7]) : triads[degree];
     const rootLetter = letter + degree + (secondary ? 4 : 0);
-    const name = noteName(root,rootLetter) + (secondary ? (sevenths ? '7' : '') : [1,2,5].includes(degree) ? 'm' : '');
+    const name = noteName(root,rootLetter) + (secondary ? (sevenths ? '7' : '') : chordSuffix[degree]);
     return {symbol,name,notes:intervals.map(interval=>bass+interval)};
   });
   let draft = {};
-  const options = [...degrees,...(dominantMode==='none' ? [] : degrees.slice(1).map(degree=>(sevenths ? 'V⁷/' : 'V/')+degree))].map(value=>[value,value]);
+  const options = chordOptions(dominantMode,sevenths).map(value=>[value,value]);
   return {
     context:`${noteName(tonic,letter)} mayor · ${chordCount} acordes · ${dominantModes[dominantMode]}`,
     events:chords.flatMap((chord,index)=>chord.notes.map(note=>[note,index*2,1.8,.08])),

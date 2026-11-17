@@ -120,11 +120,12 @@ test('the dominants option chooses whether the progression carries an applied do
   await expect(page.locator('#progression-dominants')).toHaveValue('mixed');
   await expect(page.locator('#context')).toContainText('Hasta 1 dominante secundario.');
   expect(await choices()).toContain('V/ii');
+  expect(await choices()).toContain('vii°');
 
   await selectValue(page,control,'none');
   await expect(page.locator('#progression-dominants')).toHaveValue('none');
   await expect(page.locator('#context')).toContainText('Sin dominantes secundarios.');
-  expect(await choices()).toEqual(['','I','ii','iii','IV','V','vi']);
+  expect(await choices()).toEqual(['','I','ii','iii','IV','V','vi','vii°']);
   await expect(page.getByRole('combobox',{name:'Acorde 2',exact:true})).toContainText('Elegí…');
   await expect(page.locator('#next')).toBeDisabled();
   const diatonic=await currentAnswer();
@@ -137,9 +138,53 @@ test('the dominants option chooses whether the progression carries an applied do
   await selectValue(page,control,'always');
   await expect(page.locator('#context')).toContainText('Incluye 1 dominante secundario.');
   expect(await choices()).toContain('V/V');
+  expect(await choices()).toContain('vii°');
+  expect(await choices()).not.toContain('V/vii°');
   const withDominant=await currentAnswer();
   expect(withDominant.filter(symbol=>symbol.includes('/'))).toHaveLength(1);
   await solve(withDominant);
   await page.reload();await expect(page.locator('#progression-dominants')).toHaveValue('always');
   await chooseExercise(page,0);await expect(control).toBeHidden();
+});
+
+test('the seventh scale degree answers the cadence as a diminished triad',async({page})=>{
+  await page.goto('/');await page.locator('.tab').first().waitFor();
+  await chooseExercise(page,12);
+  await selectValue(page,page.getByRole('combobox',{name:'Cantidad de acordes en la progresión',exact:true}),'4');
+  // The leading-tone cadence appears in about one progression in four: load a seed that carries it.
+  const answer=await page.evaluate(async()=>{
+    const {withSeed}=await import('/src/dom.mjs');
+    const {modes}=await import('/src/registry.mjs');
+    const {writeCookie}=await import('/src/storage.mjs');
+    const read=()=>JSON.parse(decodeURIComponent(document.cookie.split('; ').find(cookie=>cookie.startsWith('practica-ejercicio=')).split('=').slice(1).join('=')));
+    const draft=read();
+    for(let seed=draft.seed;seed<draft.seed+400;seed++){
+      const symbols=withSeed(seed,modes.progressions.create).steps[0].answer;
+      if(symbols.includes('vii°')&&!symbols.includes('/')) {
+        writeCookie('practica-ejercicio',{...draft,seed,step:0,fields:{},grade:undefined,outcomes:[]});
+        return symbols.split(' → ');
+      }
+    }
+    return null;
+  });
+  expect(answer,'some nearby seed uses the leading-tone cadence').not.toBeNull();
+  expect(answer.slice(-2)).toEqual(['vii°','I']);
+  await page.reload();
+  await expect(page.locator('#editor [role=combobox]')).toHaveCount(4);
+  const field=index=>page.getByRole('combobox',{name:`Acorde ${index+1}`,exact:true});
+  await expect(field(0)).toContainText('I');
+  await expect(field(2)).toContainText('Elegí…');
+  const notes=await page.evaluate(async()=>{
+    const {withSeed}=await import('/src/dom.mjs');
+    const {modes}=await import('/src/registry.mjs');
+    const saved=JSON.parse(decodeURIComponent(document.cookie.split('; ').find(cookie=>cookie.startsWith('practica-ejercicio=')).split('=').slice(1).join('=')));
+    const question=withSeed(saved.seed,modes.progressions.create);
+    const group=question.events.filter(event=>event[1]===4);
+    return group.map(event=>event[0]-group[0][0]);
+  });
+  expect(notes).toEqual([0,3,6]);
+  for(let index=1;index<answer.length;index++)await selectValue(page,field(index),answer[index]);
+  await page.locator('#next').click();
+  await expect(page.locator('#feedback')).toContainText('¡Correcto!');
+  await expect(page.locator('#feedback')).toHaveText(/vii°: \S+°/);
 });

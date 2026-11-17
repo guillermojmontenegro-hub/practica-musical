@@ -5,7 +5,7 @@ import { withSeed } from '../src/dom.mjs';
 
 test('progressions respect the selected length and applied dominants resolve to their targets',()=>{
   let secondaryCount=0,diatonicCount=0;
-  let outsideOctaveCount=0;
+  let outsideOctaveCount=0,leadingToneCount=0,totalCount=0;
   for(const chordCount of [4,5,6,7,8])for(const oneOctave of [false,true])for(const sevenths of [false,true])for(let seed=0;seed<300;seed++) {
     const question=withSeed(seed,()=>progressionQuestion({sevenths,oneOctave,chordCount}));
     const symbols=question.steps[0].answer.split(' → ');
@@ -22,9 +22,18 @@ test('progressions respect the selected length and applied dominants resolve to 
     assert.equal(symbols[0],'I');assert.equal(symbols.at(-1),'I');
     const secondaryChords=symbols.filter(symbol=>symbol.includes('/'));
     assert.ok(secondaryChords.length<=1,'at most one secondary dominant per exercise');
-    assert.deepEqual(symbols.slice(-2),['V','I']);
+    assert.ok(['V','vii°'].includes(symbols.at(-2)),'the phrase closes with V–I or with the leading-tone vii°–I');
     if(secondaryChords.length)secondaryCount++;else diatonicCount++;
+    // The seventh scale degree is a regular answer, independent of the dominants option.
+    totalCount++;
+    if(symbols.includes('vii°'))leadingToneCount++;
+    assert.ok(!symbols.some(symbol=>symbol.includes('/')&&symbol.endsWith('vii°')),'the diminished seventh degree is never a dominant target');
     symbols.forEach((symbol,index)=>{
+      if(symbol==='vii°'){
+        assert.equal(index,chordCount-2,'the leading-tone triad takes the cadential slot');
+        assert.deepEqual(groups[index].map(event=>event[0]-groups[index][0][0]),[0,3,6],'vii° sounds as a diminished triad');
+        assert.match(question.steps[0].explanation,/vii°: \S+°/,'the explanation names the diminished triad');
+      }
       if(!symbol.includes('/'))return;
       assert.equal(symbols[index+1],symbol.split('/')[1]);
       assert.equal(groups[index].length,sevenths ? 4 : 3);
@@ -41,10 +50,12 @@ test('progressions respect the selected length and applied dominants resolve to 
   assert.ok(outsideOctaveCount>0,'disabling the option allows other octaves');
   const secondaryRate=secondaryCount/(secondaryCount+diatonicCount);
   assert.ok(secondaryRate>.15 && secondaryRate<.35,'secondary dominants appear occasionally; most exercises are diatonic');
+  const leadingToneRate=leadingToneCount/totalCount;
+  assert.ok(leadingToneRate>.2 && leadingToneRate<.3,`the seventh degree closes about one cadence in four (${leadingToneRate.toFixed(3)})`);
 });
 
 test('the dominants option decides whether an applied dominant appears and how it is described',()=>{
-  const counted=new Set();
+  const counted=new Set(),leadingToneSeeds=new Set();
   for(const chordCount of [4,5,6,7,8])for(const sevenths of [false,true])for(let seed=0;seed<120;seed++) {
     const results={};
     for(const mode of ['none','always','mixed'])results[mode]=withSeed(seed,()=>progressionQuestion({sevenths,chordCount,dominants:mode}));
@@ -52,6 +63,8 @@ test('the dominants option decides whether an applied dominant appears and how i
     assert.equal(secondaries('none').length,0,'the no-dominant option stays diatonic');
     assert.match(results['none'].context,/Sin dominantes secundarios\./);
     assert.ok(!results['none'].steps[0].explanation.includes('resuelve al grado'),'the resolution note only appears when a dominant sounds');
+    // The leading-tone cadence belongs to the progressions themselves, not to the dominants option.
+    if(results['none'].steps[0].answer.includes('vii°'))leadingToneSeeds.add(`${chordCount}:${sevenths}:${seed}`);
     assert.equal(secondaries('always').length,1,'the with-dominant option adds exactly one applied dominant');
     assert.match(results['always'].context,/Incluye 1 dominante secundario\./);
     const symbols=results['always'].steps[0].answer.split(' → ');
@@ -68,4 +81,5 @@ test('the dominants option decides whether an applied dominant appears and how i
     }
   }
   assert.ok(counted.size>0 && counted.size<120*5*2,'the mixed option adds dominants sometimes but not always');
+  assert.ok(leadingToneSeeds.size>0 && leadingToneSeeds.size<120*5*2,'the seventh degree cadence appears even in the no-dominant option');
 });
