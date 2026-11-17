@@ -68,6 +68,8 @@ export function initExerciseUI(advance,practiceActive) {
     playing = false;
     stopExerciseAudio();
     $('listen').classList.remove('playing');
+    $('play').classList.remove('playing');
+    $('play').setAttribute('aria-pressed','false');
     $('play').setAttribute('aria-label','Reproducir audio');
     $('playStatus').textContent = '';
   }
@@ -98,7 +100,9 @@ export function initExerciseUI(advance,practiceActive) {
     const current = playbackSound(sound);
     const sequence=events||exerciseEvents();
     playing=true;
-    $('play').setAttribute('aria-label','Detener audio');
+    $('play').classList.add('playing');
+    $('play').setAttribute('aria-pressed','true');
+    $('play').setAttribute('aria-label','Pausar audio');
     $('playStatus').textContent='Cargando instrumento…';
     const sampled=await prepareExerciseAudio(sequence,current);
     if(token!==generation)return;
@@ -107,7 +111,6 @@ export function initExerciseUI(advance,practiceActive) {
     displaySound(current);
     playing = true;
     $('listen').classList.add('playing');
-    $('play').setAttribute('aria-label','Detener audio');
     $('playStatus').textContent = sampled?'Reproduciendo…':'Reproduciendo · sonido básico';
   }
   function saveDraft() {

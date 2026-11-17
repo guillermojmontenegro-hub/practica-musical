@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from '@playwright/test';
+import {selectValue} from './navigation.mjs';
 test('all exercises render and a transcription compares with its reference',async ({ page })=>{
 const errors=[];
 page.on('pageerror',error=>errors.push(error.message));
@@ -18,6 +19,7 @@ for(let index=0;index<12;index++) {
  console.log(index,await page.locator('#title').textContent());
 }
 await page.locator('.tab').nth(7).click();
+await selectValue(page,'#dictation-bars','4');
 await page.locator('#notation').focus();
 await page.keyboard.press('Enter');
 await page.keyboard.press('ArrowUp');

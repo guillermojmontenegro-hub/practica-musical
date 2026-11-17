@@ -60,7 +60,7 @@ function ExerciseWorkspace() {
 <section className="card" aria-labelledby="title">
 <div className="cardtop"><div><h2 id="title"></h2></div><span className="count" id="count"></span></div>
 <div className="exercise-score" role="status"><span id="scoreLabel">Aciertos</span><strong id="score">0 / 0</strong></div>
-<div className="listen" id="listen"><button className="play" id="play" aria-label="Reproducir audio"><svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M8 4v16l13-8z"/></svg></button><div><strong id="playLabel"></strong><small id="sound-playing"></small><small id="playStatus" role="status"></small></div><div className="bars" aria-hidden="true"></div></div>
+<div className="listen" id="listen"><button className="play" id="play" aria-label="Reproducir audio" aria-pressed="false"><svg className="icon-play" width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M8 4v16l13-8z"/></svg><svg className="icon-pause" width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M7 4h3.6v16H7zM13.4 4H17v16h-3.6z"/></svg></button><div><strong id="playLabel"></strong><small id="sound-playing"></small><small id="playStatus" role="status"></small></div><div className="bars" aria-hidden="true"></div></div>
 <div className="staff-tools"><button type="button" className="answer" id="listen-melody" hidden>Escuchar melodía</button><span className="editor-help" id="listen-count" role="status"></span></div>
 <div className="exercise-options" role="group" aria-label="Opciones del ejercicio">
   <div className="exercise-filters">

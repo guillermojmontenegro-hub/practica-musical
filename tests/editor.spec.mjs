@@ -8,6 +8,7 @@ async function add(page,bar,tool='1') {
 test('direct editing, cross-bar ties, groups, undo and reloading preserve the draft',async ({page})=>{
  const errors=[];page.on('pageerror',error=>errors.push(error.message));
  await page.goto('/');await page.locator('.tab').first().waitFor();await chooseExercise(page,7);
+ await selectValue(page,'#dictation-bars','4');
  await selectValue(page,page.locator('#meter-choice'),'simple');
  const capacity=Number((await page.locator('#editor > [role=status]').textContent()).match(/de (\d+)/)[1]);
  for(let i=0;i<capacity;i++) await add(page,0);

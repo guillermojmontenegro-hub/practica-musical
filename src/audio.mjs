@@ -1,5 +1,5 @@
 import {claimAudio} from './audio-session.mjs';
-import {melodicSampleOptions,sampleVelocity,instrumentOutput,percussionOutput,outputVolume} from './audio-levels.mjs';
+import {melodicSampleOptions,sampleVelocity,instrumentOutput,percussionOutput,outputVolume,alarmLevel} from './audio-levels.mjs';
 const instruments = {
   piano: {name:'Piano', attack:.007, sustain:.27, partials:[[1,1],[2,.38],[3,.22],[4.01,.12],[6.02,.06]], decay:.20},
   guitar: {name:'Guitarra', attack:.004, sustain:.19, partials:[[1,1],[2,.5],[3,.27],[4,.19],[5,.11]], decay:.14},
@@ -143,7 +143,7 @@ function ring() {
   if (audio?.state !== 'running') return;
   const lease=claimAudio(stopAlarm),bus=channel();
   const start=audio.currentTime+.02;
-  const voices=[76,79,84].flatMap((note,index)=>tone(note,start+index*.23,.21,.15,bus,'flute'));
+  const voices=[76,79,84].flatMap((note,index)=>tone(note,start+index*.23,.21,alarmLevel,bus,'flute'));
   const current={bus,voices,lease};alarm=current;
   voices.at(-1).addEventListener('ended',()=>{if(alarm===current)stopAlarm();},{once:true});
 }

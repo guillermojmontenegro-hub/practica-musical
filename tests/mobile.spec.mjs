@@ -25,9 +25,11 @@ for(const width of [320,390,430,844]) {
   }
   await choose(page,0);
   await page.locator('#play').tap();
-  await expect(page.locator('#play')).toHaveAttribute('aria-label','Detener audio');
+  await expect(page.locator('#play')).toHaveAttribute('aria-label','Pausar audio');
+  await expect(page.locator('#play .icon-pause')).toBeVisible();
   await page.locator('#play').tap();
   await expect(page.locator('#play')).toHaveAttribute('aria-label','Reproducir audio');
+  await expect(page.locator('#play .icon-play')).toBeVisible();
   // Write, change pitch, undo and navigate a long score without a keyboard.
   await choose(page,7);
   await page.getByRole('button',{name:'Corchea',exact:true}).tap();

@@ -2,6 +2,7 @@ import {tempoUnitLabel} from './music.mjs';
 import {claimAudio} from './audio-session.mjs';
 import { $ } from './dom.mjs';
 import { unlockAudio, newClickTrack } from './audio.mjs';
+import {metronomeLevels} from './audio-levels.mjs';
 import { clamp, preferences, savePreferences } from './settings.mjs';
 
 function initMetronome() {
@@ -35,7 +36,7 @@ function initMetronome() {
     while (nextTime < track.now()+.10) {
       const beat = Math.floor(step/ticks);
       const sub = step%ticks;
-      track.click(nextTime,sub ? 73 : beat===0 ? 87 : 79,sub ? .07 : .14);
+      track.click(nextTime,sub ? 73 : beat===0 ? 87 : 79,sub ? metronomeLevels.subdivision : metronomeLevels.beat);
       if (!sub) {
         const task = setTimeout(()=>{
           pending.delete(task);
