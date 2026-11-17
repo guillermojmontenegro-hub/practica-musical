@@ -1,8 +1,8 @@
 const gains={piano:14,guitar:11,flute:7,clarinet:6,marimba:10};
 export const outputVolume=.512;
 // The metronome and the Pomodoro alarm use the plain output bus, without the 4x instrument stage.
-// These peaks double the previous .14/.07/.15 so the cues stay audible over the sampled instruments.
-export const metronomeLevels={beat:.28,subdivision:.14};
+// The click was raised twice (.14/.07 to .28/.14 to .56/.28); measured peaks stay under .4.
+export const metronomeLevels={beat:.56,subdivision:.28};
 export const alarmLevel=.3;
 export const melodicSampleOptions=instrument=>({volume:100,extraGain:gains[instrument]});
 export function sampleVelocity(volume,percussion=false) {

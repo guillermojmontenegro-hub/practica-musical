@@ -28,7 +28,7 @@ test('the metronome and the alarm are audible over the output bus without clippi
    return {beat:window.__window(500,700),subdivision:window.__window(1000,1200),peak:window.__window(0,1500).peak};
   },harness);
  })();
- expect(clickLevels.beat.rms,`metronome beat RMS ${clickLevels.beat.rms.toFixed(4)}`).toBeGreaterThan(.013);
+ expect(clickLevels.beat.rms,`metronome beat RMS ${clickLevels.beat.rms.toFixed(4)}`).toBeGreaterThan(.028);
  expect(clickLevels.beat.peak).toBeLessThan(.98);
  expect(clickLevels.subdivision.rms/clickLevels.beat.rms).toBeCloseTo(.5,1);
  const alarm=await (async()=>{
@@ -44,4 +44,5 @@ test('the metronome and the alarm are audible over the output bus without clippi
  })();
  expect(alarm.rms,`alarm RMS ${alarm.rms.toFixed(4)}`).toBeGreaterThan(.055);
  expect(alarm.peak).toBeLessThan(.98);
+ console.info('measured cue levels',JSON.stringify({beat:clickLevels.beat,subdivision:clickLevels.subdivision,alarm}));
 });
