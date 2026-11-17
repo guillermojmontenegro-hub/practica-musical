@@ -4,6 +4,9 @@ export const outputVolume=.512;
 // The click was raised twice (.14/.07 to .28/.14 to .56/.28); measured peaks stay under .4.
 export const metronomeLevels={beat:.56,subdivision:.28};
 export const alarmLevel=.3;
+// The count-in click that leads transcriptions and rhythmic dictation was raised from .13
+// to three times that level because it was barely audible over the melody and percussion.
+export const countInLevel=.39;
 export const melodicSampleOptions=instrument=>({volume:100,extraGain:gains[instrument]});
 export function sampleVelocity(volume,percussion=false) {
   return Math.min(110,Math.max(percussion?35:80,Math.round(volume*500)));

@@ -1,4 +1,5 @@
 import { $, pick } from './dom.mjs';
+import { countInLevel } from './audio-levels.mjs';
 
 const letters = ['Do','Re','Mi','Fa','Sol','La','Si'];
 const naturals = [0,2,4,5,7,9,11];
@@ -39,7 +40,7 @@ function selectMeter() {
 export const tempoUnitLabel=meter=>meter.unit===3?'negra con puntillo':'negra';
 const meterLabel = meter => meter.top + '/' + meter.bottom;
 function countIn(meter) {
-  return Array.from({length:meter.beats},(_,index)=>[index===0 ? 84 : 79,index,.09,.13,'click']);
+  return Array.from({length:meter.beats},(_,index)=>[index===0 ? 84 : 79,index,.09,countInLevel,'click']);
 }
 
 export { letters, naturals, pitchNames, meters, clefs, figures, figureDefinitions, baseFigureTools, mod, pitchLabel, midi, clefLabel, selectMeter, meterLabel, countIn };
