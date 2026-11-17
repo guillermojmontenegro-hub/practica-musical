@@ -43,6 +43,11 @@ function initSettings(onChange) {
     onChange();
   });
   $('progression-sevenths').checked = preferences.progressionSevenths === true;
+  $('dictation-bars').value = Number(preferences.dictationBars)===4?'4':'2';
+  $('dictation-bars').addEventListener('change',()=>{
+    preferences.dictationBars = Number($('dictation-bars').value);
+    savePreferences();
+  });
   $('progression-count').value = [4,5,6,7,8].includes(Number(preferences.progressionCount)) ? String(preferences.progressionCount) : '6';
   $('progression-count').addEventListener('change',()=>{
     preferences.progressionCount = Number($('progression-count').value);

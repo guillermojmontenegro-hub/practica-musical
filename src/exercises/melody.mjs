@@ -7,13 +7,14 @@ import { clefs, clefLabel, figures, baseFigureTools, pitchLabel, midi, selectMet
 import { staffEditor } from '../staff-editor.mjs';
 import { staff } from '../notation.mjs';
 
-function melodyQuestion(type) {
+function melodyQuestion(type,{barCount}={}) {
   const clef = pick(Object.keys(clefs));
   const meter = selectMeter();
   const {bottom} = clefs[clef];
   const pitches = Array.from({length:8},(_,i)=>bottom+i);
   const tonic = clef === 'sol' ? (type==='sightSing'?0:7) : -7;
-  const measures = type==='sightSing' ? generateSingingMelody(meter,tonic) : generateMelody(meter,pitches,tonic);
+  const count=type==='dictation' ? (Number(barCount??$('dictation-bars')?.value)===4?4:2) : 4;
+  const measures = type==='sightSing' ? generateSingingMelody(meter,tonic) : generateMelody(meter,pitches,tonic,count);
   const context = `Clave de ${clefLabel(clef)} · ${meter.top}/${meter.bottom}`;
   const solution = staff({clef,meter,measures,label:`${context}, melodía de ${measures.length} compases`});
   const pulse = countIn(meter);
@@ -21,8 +22,8 @@ function melodyQuestion(type) {
   if (type === 'dictation') {
     const reference = [[midi(tonic),0,.72,.16]];
     const listening = [...pulse,...melody].map(([note,time,length,volume,voice])=>[note,time+1,length,volume,voice]);
-    return {context:context + ' · Nota de referencia: ' + pitchLabel(tonic),
-      notation:staff({clef,meter,measures:[[],[],[],[]],label:context}),
+    return {context:context + ` · ${count} compases · Nota de referencia: ` + pitchLabel(tonic),
+      notation:staff({clef,meter,measures:measures.map(()=>[]),label:context}),
       events:[...reference,...listening],steps:[dictationStep(measures,pitches,meter,solution,clef)]};
   }
   const names = measures.map(notes=>notes.map(note=>pitchLabel(note.pitch)).join(' – ')).join(' | ');

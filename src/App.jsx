@@ -67,6 +67,7 @@ function ExerciseWorkspace() {
     <label className="mode" id="progression-count-label" hidden><span>Acordes</span><select id="progression-count" aria-label="Cantidad de acordes en la progresión" defaultValue="6">{[4,5,6,7,8].map(count=><option key={count} value={count}>{count}</option>)}</select></label>
     <label className="mode" id="key-practice-filter" hidden><span>Tonalidad</span><select id="key-practice" defaultValue="both"><option value="major">Mayor</option><option value="minor">Menor</option><option value="both">Ambas</option></select></label>
     <label className="mode" id="meter-filter" hidden><span>Compás</span><select id="meter-choice"><option value="mixed">Ambos</option><option value="simple">Simple</option><option value="compound">Compuesto</option></select></label>
+    <label className="mode" id="dictation-bars-label" hidden><span>Compases</span><select id="dictation-bars" defaultValue="2"><option value="2">2</option><option value="4">4</option></select></label>
     <label className="mode" id="rhythm-pitches-label" hidden><span>Voces</span><select id="rhythm-pitches"><option value="1">Una voz</option><option value="2">Dos voces</option></select></label>
   </div>
   <div className="exercise-toggles">

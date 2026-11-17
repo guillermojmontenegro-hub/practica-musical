@@ -113,9 +113,11 @@ export function initExerciseUI(advance,practiceActive) {
   function saveDraft() {
     if (!question) return;
     const savedOutcomes=outcomes.map(({items,...result})=>question.steps.length>1?{...result,items}:result);
-    writeCookie(draftKey,{mode,seed,step,selected,firstCorrect,listens,sound,grade:restoredGrade,outcomes:savedOutcomes,fields:fieldDraft});
+    writeCookie(draftKey,{mode,seed,step,selected,firstCorrect,listens,sound,grade:restoredGrade,outcomes:savedOutcomes,fields:fieldDraft,barCount:mode==='dictation'?question.notation.measures.length:undefined});
   }
   function newQuestion(restore) {
+    // Older dictation drafts always had four bars; do not replay them into two.
+    if(mode==='dictation'&&restore&&(restore.barCount??4)!==Number($('dictation-bars').value))restore=undefined;
     stopAudio();
     seed = restore?.seed ?? Math.floor(Math.random()*4294967296);
     question = withSeed(seed,()=>{
@@ -155,6 +157,7 @@ export function initExerciseUI(advance,practiceActive) {
     $('playLabel').textContent = playLabel || '';
     $('listen').hidden = !playLabel;
     $('meter-filter').hidden = !meter;
+    $('dictation-bars-label').hidden = mode !== 'dictation';
     $('key-practice-filter').hidden=mode!=='keyRead';
     $('rhythm-pitches-label').hidden = !question.rhythmPitches;
     $('count').textContent = 'Ejercicio ' + attempts[mode] + (mode === 'harmony' ? ' · ' + (step+1) + '/2' : '');
@@ -287,6 +290,7 @@ export function initExerciseUI(advance,practiceActive) {
     focusQuestion();
   });
   $('meter-choice').addEventListener('change',()=>newQuestion());
+  $('dictation-bars').addEventListener('change',()=>newQuestion());
   $('key-practice').addEventListener('change',()=>newQuestion());
   $('rhythm-pitches').addEventListener('change',()=>newQuestion());
   $('progression-sevenths').addEventListener('change',()=>newQuestion());

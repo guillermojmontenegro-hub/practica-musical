@@ -2,13 +2,14 @@ import { pick } from './dom.mjs';
 import { midi } from './music.mjs';
 import { sumNotes, tupletNotes, tupletSpan, soundingNotes } from './score-model.mjs';
 
-export function generateMelody(meter,pitches,tonic) {
+export function generateMelody(meter,pitches,tonic,barCount=4) {
+  barCount=Number(barCount)===2?2:4;
   const capacity=meter.beats*meter.unit;
   const feature=pick(['syncopation','group2','group3','group4','group5','crossTie']);
-  const target=pick([0,1,2]);
+  const target=pick(Array.from({length:barCount-1},(_,index)=>index));
   let last=tonic,groupId=1;
   const regular=()=>({pitch:last,length:1});
-  const measures=Array.from({length:4},(_,bar)=>{
+  const measures=Array.from({length:barCount},(_,bar)=>{
     const notes=[];
     if(bar===target&&feature==='syncopation') {
       notes.push(...[1,1,1,1].map(length=>({pitch:last,length})));
@@ -38,7 +39,7 @@ export function generateMelody(meter,pitches,tonic) {
   const notes=measures.flat();
   notes.forEach((note,index)=>{if(note.tie) notes[index+1].pitch=note.pitch;});
   if(feature==='crossTie'||pick([true,false,false])) {
-    const bar=pick([0,1,2]);
+    const bar=pick(Array.from({length:barCount-1},(_,index)=>index));
     const from=measures[bar].at(-1),to=measures[bar+1][0];
     from.tie=true;to.pitch=from.pitch;
     // An incoming tie can change a note that already starts another tie.

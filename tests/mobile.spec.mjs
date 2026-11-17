@@ -44,8 +44,9 @@ for(const width of [320,390,430,844]) {
   await page.getByRole('button',{name:'Deshacer',exact:true}).tap();
   await expect(note).toHaveAttribute('data-length','1');
   await page.getByRole('button',{name:'Compás siguiente',exact:true}).tap();
-  await expect(page.locator('.score-position')).toHaveText('Compás 2 de 4');
-  expect(await page.locator('#notation').evaluate(node=>node.scrollLeft)).toBeGreaterThan(0);
+  await expect(page.locator('.score-position')).toHaveText('Compás 2 de 2');
+  const scoreScroll=await page.locator('#notation').evaluate(node=>({left:node.scrollLeft,overflows:node.scrollWidth>node.clientWidth}));
+  if(scoreScroll.overflows)expect(scoreScroll.left).toBeGreaterThan(0);
   await page.locator('[data-staff-bar="1"]').tap({position:{x:180,y:100}});
   await expect(page.locator('#editor > [role=status]')).toContainText('Compás 2 · 0.5 de');
   await fits(page);
