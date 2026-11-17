@@ -1,4 +1,5 @@
 const gains={piano:14,guitar:11,flute:7,clarinet:6,marimba:10};
+export const outputVolume=.512;
 export const melodicSampleOptions=instrument=>({volume:100,extraGain:gains[instrument]});
 export function sampleVelocity(volume,percussion=false) {
   return Math.min(110,Math.max(percussion?35:80,Math.round(volume*500)));
@@ -12,7 +13,8 @@ export function instrumentOutput(context) {
   });
   limiter.oversample='4x';
   const gain=context.createGain();gain.gain.value=4;
-  gain.connect(limiter);limiter.connect(context.destination);return gain;
+  const output=context.createGain();output.gain.value=outputVolume;
+  gain.connect(limiter);limiter.connect(output);output.connect(context.destination);return gain;
 }
 
 // Match the rendered attack RMS (first 120 ms), including the playback envelope.

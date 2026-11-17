@@ -1,6 +1,7 @@
 import { rhythmEvents } from '../rhythm-playback.mjs';
 import { createVoiceEditors, soundingTimeline, groupTools, tupletNotes as makeTuplet } from '../score-model.mjs';
 import { transcriptionErrors } from '../diagnostics.mjs';
+import { transcriptionAssessment } from '../grading.mjs';
 import { $, pick } from '../dom.mjs';
 import { selectMeter, meterLabel, figures, baseFigureTools } from '../music.mjs';
 import { staffEditor } from '../staff-editor.mjs';
@@ -84,6 +85,7 @@ function rhythmQuestion(type='syncopation') {
   return {context:`${context} · ${meter.beats} pulsos por compás · ${meter.unit} corcheas por pulso` + (poly ? ` · Dos voces · 3 contra 2 en un pulso` : twoVoices ? ' · Dos voces' : ' · Una voz'),rhythmPitches:!poly,events,notation:draw(entered,enteredSecond,'Transcripción rítmica'),steps:[{
     prompt:twoVoices ? 'Transcribí las dos voces.' : 'Transcribí el ritmo.',
     check:()=>timeline(entered.flat())===timeline(measures.flat())&&(!twoVoices||timeline(enteredSecond.flat())===timeline(secondary.flat())),
+    evaluate:()=>transcriptionAssessment(voices,twoVoices?[measures,secondary]:[measures],{rhythm:true}),
     answer:'Compará tu transcripción con el ritmo de referencia',
     solution,compare:true,
     diagnose:()=>[...(timeline(entered.flat())===timeline(measures.flat())?[]:transcriptionErrors(entered,measures,{rhythm:true}).map(error=>twoVoices?`Voz 1: ${error}`:error)),...(twoVoices&&timeline(enteredSecond.flat())!==timeline(secondary.flat())?transcriptionErrors(enteredSecond,secondary,{rhythm:true}).map(error=>`Voz 2: ${error}`):[])],

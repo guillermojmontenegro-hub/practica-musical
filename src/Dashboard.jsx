@@ -41,7 +41,6 @@ export default function Dashboard({onPractice}) {
     <div className="stats-grid">
       <Metric label="Ejercicios resueltos" value={data.total} detail={`${data.right} correctos · ${data.wrong} fallidos`}/>
       <Metric label="Aciertos" value={percent(data.accuracy)} detail={data.change===null ? 'La comparación semanal aparece con datos de ambas semanas' : `${data.change>0?'+':''}${data.change} puntos frente a la semana anterior`}/>
-      <Metric label="Puntaje obtenido" value={new Intl.NumberFormat('es-AR',{maximumFractionDigits:1}).format(data.credit)} detail="El solfeo cantado ajusta el puntaje por escuchas"/>
       <Metric label="Días con actividad" value={data.activeDays} detail="Según los intentos con fecha registrados"/>
     </div>
     <p className="data-note">Los totales anteriores se conservan. La evolución y el detalle de fallos se registran desde esta actualización (hasta 5.000 intentos). Solfeo leído y cantado usan tu autoevaluación.</p>

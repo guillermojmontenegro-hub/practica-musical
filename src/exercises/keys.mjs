@@ -3,6 +3,7 @@ import { $, pick, shuffle } from '../dom.mjs';
 import { clefs, clefLabel, pitchLabel, selectMeter } from '../music.mjs';
 import { staffEditor } from '../staff-editor.mjs';
 import { staff } from '../notation.mjs';
+import { assess } from '../grading.mjs';
 
 const signatures = {
   '♯':[10,7,11,8,5,9,6],
@@ -36,6 +37,10 @@ function keyQuestion(write) {
       prompt:mode==='both'?'Indicá la tonalidad mayor y su relativa menor.':`Indicá la tonalidad ${mode==='major'?'mayor':'menor'}.`,
       answer:types.map(type=>`${names[type]} ${type==='major'?'mayor':'menor'}`).join(' / '),
       check:()=>types.every(type=>draft[type+'Note']===expected[type].note&&draft[type+'Alter']===expected[type].alter),
+      evaluate:()=>assess(types.flatMap(type=>[
+        {key:type+'Note',label:`Nota ${type==='major'?'mayor':'menor'}`,correct:draft[type+'Note']===expected[type].note,given:draft[type+'Note'],answer:expected[type].note},
+        {key:type+'Alter',label:`Alteración ${type==='major'?'mayor':'menor'}`,correct:draft[type+'Alter']===expected[type].alter,given:draft[type+'Alter']==='natural'?'♮':draft[type+'Alter'],answer:expected[type].alter==='natural'?'♮':expected[type].alter}
+      ])),
       diagnose:()=>types.flatMap(type=>{
         const suffix=type==='major'?'mayor':'menor',errors=[];
         if(draft[type+'Note']!==expected[type].note)errors.push(`Nota de la tonalidad ${suffix}`);
@@ -66,6 +71,14 @@ function keyQuestion(write) {
     },
     check:()=>kind === (number ? symbol : 'none') &&
       entered.length === signs.length && entered.every((pitch,index)=>pitch===signs[index]),
+    evaluate:()=>{
+      const correctKind=kind===(number?symbol:'none');
+      return assess([
+        {label:'Tipo de alteración',correct:correctKind,given:kind==='none'?'Sin alteraciones':kind,answer:number?symbol:'Sin alteraciones'},
+        {label:'Cantidad de alteraciones',correct:entered.length===signs.length,given:String(entered.length),answer:String(signs.length)},
+        ...Array.from({length:Math.max(entered.length,signs.length)},(_,index)=>({label:`Alteración ${index+1}`,correct:entered[index]===signs[index],given:entered[index]===undefined?'Falta':pitchLabel(entered[index]),answer:signs[index]===undefined?'No corresponde':pitchLabel(signs[index])}))
+      ],{signs:entered.map((pitch,index)=>correctKind&&pitch===signs[index])});
+    },
     editor(container) {
       staffEditor(container,{
         tools:[['♯','♯ Sostenido'],['♭','♭ Bemol'],['none','Sin alteraciones']],

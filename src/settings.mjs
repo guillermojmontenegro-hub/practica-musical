@@ -42,6 +42,21 @@ function initSettings(onChange) {
     savePreferences();
     onChange();
   });
+  $('progression-sevenths').checked = preferences.progressionSevenths === true;
+  $('progression-count').value = [4,5,6,7,8].includes(Number(preferences.progressionCount)) ? String(preferences.progressionCount) : '6';
+  $('progression-count').addEventListener('change',()=>{
+    preferences.progressionCount = Number($('progression-count').value);
+    savePreferences();
+  });
+  $('progression-octave').checked = (preferences.progressionOneOctave ?? preferences.progressionAscending) !== false;
+  $('progression-octave').addEventListener('change',()=>{
+    preferences.progressionOneOctave = $('progression-octave').checked;
+    savePreferences();
+  });
+  $('progression-sevenths').addEventListener('change',()=>{
+    preferences.progressionSevenths = $('progression-sevenths').checked;
+    savePreferences();
+  });
   $('rhythm-pitches').value = preferences.rhythmPitches === '2' ? '2' : '1';
   $('rhythm-pitches').addEventListener('change',()=>{
     preferences.rhythmPitches = $('rhythm-pitches').value;

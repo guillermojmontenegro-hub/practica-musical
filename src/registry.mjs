@@ -2,6 +2,8 @@ import { legacyQuestion, intervalQuestion } from './exercises/ear.mjs';
 import { keyQuestion } from './exercises/keys.mjs';
 import { melodyQuestion } from './exercises/melody.mjs';
 import { rhythmQuestion } from './exercises/rhythm.mjs';
+import { progressionQuestion } from './exercises/progression.mjs';
+import { $ } from './dom.mjs';
 
 // Register an exercise here to include it in both manual and guided practice.
 const modes = {
@@ -16,7 +18,8 @@ const modes = {
   rhythm: {title:'Ritmo y síncopa', icon:'♩', short:'Dictado de dos compases', description:'Transcribí ritmos con síncopa en compases simples y compuestos.', play:'Escuchar dictado', meter:true, create:()=>rhythmQuestion()},
   polyrhythm: {title:'Polirritmia 3 contra 2', icon:'3∶2', short:'Dictado a dos voces', description:'Escribí la voz melódica sobre el acompañamiento de dos golpes por pulso.', play:'Escuchar polirritmia', meter:true, create:()=>rhythmQuestion('poly')},
   tuplets: {title:'Grupos irregulares', icon:'⅗', short:'Dosillos a quintillos', description:'Transcribí dosillos, tresillos, cuatricillos y quintillos.', play:'Escuchar dictado', meter:true, create:()=>rhythmQuestion('tuplet')},
-  intervals: {title:'Intervalos', icon:'↕', short:'Ascendentes y descendentes', description:'Identificá el intervalo y su dirección.', play:'Escuchar intervalo', create:intervalQuestion}
+  intervals: {title:'Intervalos', icon:'↕', short:'Ascendentes y descendentes', description:'Identificá el intervalo y su dirección.', play:'Escuchar intervalo', create:intervalQuestion},
+  progressions: {title:'Progresión de acordes', icon:'→', short:'Acordes y sus grados', description:'Reconocé los acordes de una progresión, con un posible dominante secundario.', play:'Escuchar progresión', create:()=>progressionQuestion({sevenths:$('progression-sevenths').checked,oneOctave:$('progression-octave').checked,chordCount:Number($('progression-count').value)})}
 };
 
 export { modes };

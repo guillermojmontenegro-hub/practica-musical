@@ -1,6 +1,6 @@
 # Practica · Lenguaje musical
 
-Aplicación de práctica musical en React 19, con Vite y VexFlow 4.2.5 para grabado musical SVG. Incluye los doce ejercicios, audio sintetizado, metrónomo, práctica guiada e historial.
+Aplicación de práctica musical en React 19, con Vite y VexFlow 4.2.5 para grabado musical SVG. Incluye trece ejercicios, audio muestreado y sintetizado, metrónomo, práctica guiada e historial.
 
 ## Desarrollo
 
@@ -38,7 +38,7 @@ La prueba de navegador usa Chrome en `/usr/bin/google-chrome` (se puede cambiar 
 
 ## Estadísticas y tema
 
-La pestaña **Estadísticas** incluye evolución diaria, aciertos y puntaje, resultados por ejercicio, ranking de fallos, últimos intentos y tiempo de práctica guiada. Permite filtrar por período y ejercicio y volver a practicar desde los resultados. Los totales previos se conservan; los nuevos detalles incluyen fecha, errores de respuesta y categorías de transcripción. El historial detallado se guarda en localStorage, hasta 5.000 intentos. Los ejercicios de solfeo registran la autoevaluación del estudiante.
+La pestaña **Estadísticas** incluye evolución diaria, aciertos, resultados por ejercicio, ranking de fallos, últimos intentos y tiempo de práctica guiada. Permite filtrar por período y ejercicio y volver a practicar desde los resultados. Los totales previos se conservan; los nuevos detalles incluyen fecha, errores de respuesta y categorías de transcripción. El historial detallado se guarda en localStorage, hasta 5.000 intentos. Los ejercicios de solfeo registran la autoevaluación del estudiante. El puntaje interno no se muestra en la interfaz.
 
 El botón de la cabecera alterna modo claro y oscuro. La primera visita respeta el tema del sistema y las elecciones siguientes se conservan en este navegador. El tema también cubre los pentagramas SVG.
 
@@ -52,7 +52,7 @@ Para probarla en un teléfono de la misma red, ejecutá `npm run dev` y abrí la
 
 Las pruebas de navegación lateral verifican que contraer el menú conserve el ejercicio y los ajustes, que el panel móvil gestione el foco del teclado y que el contenido central permanezca libre de las tarjetas de configuración.
 
-El valor de aciertos se muestra dentro de la tarjeta del ejercicio actual; el solfeo cantado muestra el puntaje ajustado por escuchas.
+El valor de aciertos se muestra dentro de la tarjeta del ejercicio actual; el ajuste por escuchas del solfeo cantado se conserva internamente.
 
 ## Figuras, ligaduras y coherencia rítmica
 
@@ -65,6 +65,12 @@ Las pruebas de correlación recorren 1.600 ejercicios generados y contrastan las
 Los ejercicios mantienen una presentación mínima: consigna, contexto musical, partitura, controles con símbolos y resultado. Se omiten las ayudas repetidas y los textos de atajos; los controles conservan tooltips y nombres accesibles.
 
 ## Respuestas y edición
+
+Las progresiones permiten elegir de cuatro a ocho acordes (seis por defecto). El primero siempre es I y viene dado. Se usan progresiones comunes: aproximadamente tres de cada cuatro son diatónicas y las restantes incluyen un solo dominante secundario con resolución inmediata. «Con séptima» comienza desactivado; «En 1 octava» comienza activado y mantiene las fundamentales en la octava de la tónica inicial. Los ajustes se conservan en el navegador.
+
+Los ejercicios con varias respuestas suman crédito parcial al puntaje interno: progresiones, intervalos, lectura y escritura de armaduras, dominantes en dos pasos y dictados melódicos o rítmicos, incluidas ambas voces. Las respuestas dadas no aportan crédito. La corrección distingue cada acierto y error con color y texto; las partituras también resaltan las notas y alteraciones. Las escrituras ligadas equivalentes reciben el mismo crédito. Recargar una corrección conserva sus marcas sin registrar un intento adicional.
+
+Las opciones de todos los ejercicios comparten una grilla adaptable, textos breves y controles alineados. El volumen general está al 51,2 % del nivel anterior a los ajustes.
 
 Los intervalos se responden mediante tres selectores: número, calidad y dirección. La lectura de armaduras utiliza nota y alteración para las tonalidades mayor y menor, con un filtro para practicar mayores, menores o ambas. Las armaduras se muestran sin indicación de compás.
 

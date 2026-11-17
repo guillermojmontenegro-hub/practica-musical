@@ -62,17 +62,24 @@ function ExerciseWorkspace() {
 <div className="exercise-score" role="status"><span id="scoreLabel">Aciertos</span><strong id="score">0 / 0</strong></div>
 <div className="listen" id="listen"><button className="play" id="play" aria-label="Reproducir audio"><svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M8 4v16l13-8z"/></svg></button><div><strong id="playLabel"></strong><small id="sound-playing"></small><small id="playStatus" role="status"></small></div><div className="bars" aria-hidden="true"></div></div>
 <div className="staff-tools"><button type="button" className="answer" id="listen-melody" hidden>Escuchar melodía</button><span className="editor-help" id="listen-count" role="status"></span></div>
-<label className="mode" id="arpeggioLabel" hidden><input id="arpeggio" type="checkbox" /> Escuchar como arpegio</label>
-<label className="mode" id="key-practice-filter" hidden>Practicar <select id="key-practice" defaultValue="both"><option value="major">Mayores</option><option value="minor">Menores</option><option value="both">Ambas</option></select></label>
-<label className="mode" id="meter-filter" hidden>Compás
-<select id="meter-choice"><option value="mixed">Simple y compuesto</option><option value="simple">Simple</option><option value="compound">Compuesto</option></select></label>
-<label className="mode" id="rhythm-pitches-label" hidden>Voces del ritmo
-<select id="rhythm-pitches"><option value="1">Una voz</option><option value="2">Dos voces</option></select></label>
+<div className="exercise-options" role="group" aria-label="Opciones del ejercicio">
+  <div className="exercise-filters">
+    <label className="mode" id="progression-count-label" hidden><span>Acordes</span><select id="progression-count" aria-label="Cantidad de acordes en la progresión" defaultValue="6">{[4,5,6,7,8].map(count=><option key={count} value={count}>{count}</option>)}</select></label>
+    <label className="mode" id="key-practice-filter" hidden><span>Tonalidad</span><select id="key-practice" defaultValue="both"><option value="major">Mayor</option><option value="minor">Menor</option><option value="both">Ambas</option></select></label>
+    <label className="mode" id="meter-filter" hidden><span>Compás</span><select id="meter-choice"><option value="mixed">Ambos</option><option value="simple">Simple</option><option value="compound">Compuesto</option></select></label>
+    <label className="mode" id="rhythm-pitches-label" hidden><span>Voces</span><select id="rhythm-pitches"><option value="1">Una voz</option><option value="2">Dos voces</option></select></label>
+  </div>
+  <div className="exercise-toggles">
+    <label className="mode" id="arpeggioLabel" hidden><input id="arpeggio" type="checkbox" aria-label="Escuchar como arpegio" /><span>Arpegio</span></label>
+    <label className="mode" id="progression-sevenths-label" hidden><input id="progression-sevenths" type="checkbox" aria-label="Incluir acordes con séptima" /><span>Con séptima</span></label>
+    <label className="mode" id="progression-octave-label" hidden><input id="progression-octave" type="checkbox" /><span>En 1 octava</span></label>
+  </div>
+</div>
 <div id="harmony-context" className="harmony-context" hidden>
   <dl>
-    <div><dt>Tonalidad principal</dt><dd id="harmony-key"></dd></div>
-    <div><dt>Escala de referencia</dt><dd id="harmony-scale"></dd></div>
-    <div><dt>Acorde para analizar</dt><dd id="harmony-chord"></dd></div>
+    <div><dt>Tonalidad</dt><dd id="harmony-key"></dd></div>
+    <div><dt>Escala</dt><dd id="harmony-scale"></dd></div>
+    <div><dt>Acorde</dt><dd id="harmony-chord"></dd></div>
   </dl>
   <details><summary>Cómo resolverlo</summary><p>Buscá la nota que queda una quinta justa por debajo de la fundamental del acorde dado. Fijate qué grado ocupa esa nota en la escala de referencia. Por ejemplo, en Do mayor, Re7 (Re, Fa♯, La, Do) resuelve en Sol. Sol es el quinto grado, así que Re7 es V⁷/V. Fa♯ es la sensible de Sol.</p></details>
 </div>
@@ -81,6 +88,7 @@ function ExerciseWorkspace() {
 <div id="notation" hidden></div>
 <div className="answers" id="answers" role="group" aria-labelledby="prompt"></div>
 <div className="feedback" id="feedback" role="status"></div>
+<div id="answer-review"></div>
 <div className="actions"><button className="skip" id="skip">Saltar ejercicio</button><button className="next" id="next" disabled>Comprobar →</button></div>
 
 </section></div>);

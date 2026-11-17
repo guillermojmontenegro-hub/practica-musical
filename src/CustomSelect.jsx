@@ -4,7 +4,7 @@ import { createPortal } from 'react-dom';
 
 function snapshot(select) {
   const options=[...select.options].map(option=>({value:option.value,label:option.label,disabled:option.disabled}));
-  const label=select.getAttribute('aria-label')||[...(select.closest('label')?.childNodes||[])].filter(node=>node.nodeType===3).map(node=>node.textContent.trim()).filter(Boolean).join(' ')||select.title||'Seleccionar';
+  const label=select.getAttribute('aria-label')||[...(select.closest('label')?.childNodes||[])].filter(node=>node.nodeType===3||node.nodeType===1&&node.tagName==='SPAN'&&!node.classList.contains('custom-select-host')).map(node=>node.textContent.trim()).filter(Boolean).join(' ')||select.title||'Seleccionar';
   return {options,value:select.value,disabled:select.disabled,label};
 }
 export function CustomSelect({select}) {

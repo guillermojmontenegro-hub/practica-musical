@@ -1,6 +1,7 @@
 import { generateMelody, generateSingingMelody, melodyEvents } from '../melody-patterns.mjs';
 import { createScoreEditor, groupTools, soundingTimeline, sumNotes } from '../score-model.mjs';
 import { transcriptionErrors } from '../diagnostics.mjs';
+import { transcriptionAssessment } from '../grading.mjs';
 import { $, pick } from '../dom.mjs';
 import { clefs, clefLabel, figures, baseFigureTools, pitchLabel, midi, selectMeter, countIn } from '../music.mjs';
 import { staffEditor } from '../staff-editor.mjs';
@@ -61,6 +62,7 @@ function dictationStep(measures,pitches,meter,solution,clef) {
     solution,compare:true,
     diagnose:()=>transcriptionErrors(groups,measures,{rhythm:true}),
     check:()=>soundingTimeline(groups.flat())===soundingTimeline(measures.flat()),
+    evaluate:()=>transcriptionAssessment([groups],[measures]),
     editor(container) {
       staffEditor(container,{
         tools:[...baseFigureTools,...groupTools],

@@ -1,5 +1,5 @@
 import {claimAudio} from './audio-session.mjs';
-import {melodicSampleOptions,sampleVelocity,instrumentOutput,percussionOutput} from './audio-levels.mjs';
+import {melodicSampleOptions,sampleVelocity,instrumentOutput,percussionOutput,outputVolume} from './audio-levels.mjs';
 const instruments = {
   piano: {name:'Piano', attack:.007, sustain:.27, partials:[[1,1],[2,.38],[3,.22],[4.01,.12],[6.02,.06]], decay:.20},
   guitar: {name:'Guitarra', attack:.004, sustain:.19, partials:[[1,1],[2,.5],[3,.27],[4,.19],[5,.11]], decay:.14},
@@ -51,6 +51,7 @@ async function unlockAudio() {
 
 function channel() {
   const bus = audio.createGain();
+  bus.gain.value = outputVolume;
   bus.connect(audio.destination);
   return bus;
 }

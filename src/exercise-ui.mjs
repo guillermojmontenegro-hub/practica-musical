@@ -8,6 +8,7 @@ import { $, shuffle, withSeed } from './dom.mjs';
 import { modes } from './registry.mjs';
 import { instruments, unlockAudio, prepareExerciseAudio, playExercise, stopExerciseAudio } from './audio.mjs';
 import { nextSound, playbackSound, preferences, savePreferences } from './settings.mjs';
+import { assess, combinedCredit, showAnswerReview } from './grading.mjs';
 
 export function initExerciseUI(advance,practiceActive) {
   const draftKey = 'practica-ejercicio';
@@ -111,7 +112,8 @@ export function initExerciseUI(advance,practiceActive) {
   }
   function saveDraft() {
     if (!question) return;
-    writeCookie(draftKey,{mode,seed,step,selected,firstCorrect,listens,sound,grade:restoredGrade,outcomes,fields:fieldDraft});
+    const savedOutcomes=outcomes.map(({items,...result})=>question.steps.length>1?{...result,items}:result);
+    writeCookie(draftKey,{mode,seed,step,selected,firstCorrect,listens,sound,grade:restoredGrade,outcomes:savedOutcomes,fields:fieldDraft});
   }
   function newQuestion(restore) {
     stopAudio();
@@ -140,9 +142,8 @@ export function initExerciseUI(advance,practiceActive) {
   }
   function progress() {
     const {right=0,total=0} = stats[mode] || {};
-    const credit = stats[mode]?.credit ?? right;
-    $('scoreLabel').textContent = mode==='sightSing' ? 'Puntaje ajustado por escuchas' : mode==='harmony' ? 'Ambas respuestas correctas' : 'Aciertos';
-    $('score').textContent = (mode==='sightSing' ? credit.toFixed(1) : right) + ' / ' + total;
+    $('scoreLabel').textContent = 'Aciertos';
+    $('score').textContent = right + ' / ' + total;
   }
   function render() {
     lockStaff();
@@ -158,6 +159,9 @@ export function initExerciseUI(advance,practiceActive) {
     $('rhythm-pitches-label').hidden = !question.rhythmPitches;
     $('count').textContent = 'Ejercicio ' + attempts[mode] + (mode === 'harmony' ? ' · ' + (step+1) + '/2' : '');
     $('arpeggioLabel').hidden = mode !== 'chords';
+    $('progression-sevenths-label').hidden = mode !== 'progressions';
+    $('progression-octave-label').hidden = mode !== 'progressions';
+    $('progression-count-label').hidden = mode !== 'progressions';
     $('harmony-context').hidden = !question.harmony;
     if (question.harmony) {
       const {homeKey,scale,chord} = question.harmony;
@@ -169,6 +173,7 @@ export function initExerciseUI(advance,practiceActive) {
     $('context').textContent = question.context || '';
     $('prompt').textContent = part.prompt;
     $('feedback').textContent = '';
+    $('answer-review').replaceChildren();
     $('next').hidden = false;
     $('next').disabled = !part.reveal;
     $('next').textContent = part.reveal ? 'Ver referencia →' : 'Comprobar →';
@@ -226,8 +231,9 @@ export function initExerciseUI(advance,practiceActive) {
       return;
     }
     graded = true;
-    const correct = part.check ? part.check() : part.options[selected] === part.answer;
-    outcomes[step] = {correct,errors:correct ? [] : part.diagnose ? part.diagnose() : [`Elegiste «${part.options?.[selected] || 'sin respuesta'}»; era «${part.answer}»`]};
+    const assessment = part.evaluate ? part.evaluate() : assess([{label:question.steps.length>1?(step===0?'Función del acorde':'Sensible'):'Respuesta',correct:part.check ? part.check() : part.options[selected]===part.answer,given:part.options?.[selected],answer:part.answer}]);
+    const {correct,earned,total,items} = assessment;
+    outcomes[step] = {correct,earned,total,items:part.evaluate||question.steps.length>1?items:[],errors:correct ? [] : part.diagnose ? part.diagnose() : [`Elegiste «${part.options?.[selected] || 'sin respuesta'}»; era «${part.answer}»`]};
     [...$('answers').children].forEach((button,i)=>{
       button.disabled = true;
       if (part.options[i] === part.answer) button.classList.add('good');
@@ -237,11 +243,12 @@ export function initExerciseUI(advance,practiceActive) {
     for (const input of $('editor').querySelectorAll('select, button')) input.disabled = true;
     if (part.solution) {
       $('notation').hidden = false;
-      showSolution(part.solution,part.compare);
+      showSolution(part.solution,part.compare,assessment.notation);
     }
     $('feedback').textContent = (correct ? '¡Correcto! ' : 'Respuesta: ' + part.answer + '. ') + (part.explanation || '');
+    if(finalStep)showAnswerReview($('editor'),outcomes,$('answer-review'),{mistakesOnly:Boolean(assessment.notation?.notes)});
     firstCorrect &&= correct;
-    if (finalStep && !replaying) record(firstCorrect);
+    if (finalStep && !replaying) record(firstCorrect,combinedCredit(outcomes));
     restoredGrade = 'checked';
     saveDraft();
     $('next').textContent = finalStep ? 'Siguiente ejercicio →' : 'Identificar sensible →';
@@ -275,13 +282,16 @@ export function initExerciseUI(advance,practiceActive) {
   }));
   $('next').addEventListener('click',()=>submit());
   $('skip').addEventListener('click',()=>{
-    if (practiceActive() && (!graded || step < question.steps.length-1 || question.steps[step].reveal)) record(false);
+    if (practiceActive() && (!graded || step < question.steps.length-1 || question.steps[step].reveal)) record(false,combinedCredit(question.steps.map((part,index)=>outcomes[index]||{earned:0,total:part.evaluate?.().total??1})));
     advance();
     focusQuestion();
   });
   $('meter-choice').addEventListener('change',()=>newQuestion());
   $('key-practice').addEventListener('change',()=>newQuestion());
   $('rhythm-pitches').addEventListener('change',()=>newQuestion());
+  $('progression-sevenths').addEventListener('change',()=>newQuestion());
+  $('progression-octave').addEventListener('change',()=>newQuestion());
+  $('progression-count').addEventListener('change',()=>newQuestion());
   window.addEventListener('keydown',event=>{
     if (document.getElementById('practice-page')?.hidden || document.querySelector('.workspace-main[inert]') || suspended || event.altKey || event.ctrlKey || event.metaKey || event.repeat || event.target.matches('input, select, textarea, summary')) return;
     const index = ['a','b','c','d'].indexOf(event.key.toLowerCase());

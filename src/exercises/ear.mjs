@@ -1,5 +1,6 @@
 import { $, pick, shuffle } from '../dom.mjs';
 import { letters, naturals, pitchNames, mod, selectMeter } from '../music.mjs';
+import { assess } from '../grading.mjs';
 
 const major = [0,2,4,5,7,9,11,12];
 const natural = [0,2,3,5,7,8,10,12];
@@ -81,6 +82,14 @@ function intervalQuestion() {
     prompt:'¿Qué intervalo escuchás?',
     answer:`${canonical[0]}.º ${canonical[1].toLowerCase()} ${suffix(direction)}`,
     check:()=>accepted.some(([number,quality])=>Number(draft.number)===number&&draft.quality===quality)&&draft.direction===String(direction),
+    evaluate:()=>{
+      const matching=accepted.find(([number])=>number===Number(draft.number))||canonical;
+      return assess([
+        {key:'number',label:'Intervalo',correct:accepted.some(([number])=>number===Number(draft.number)),given:draft.number,answer:`${canonical[0]}.º`},
+        {key:'quality',label:'Calidad',correct:draft.quality===matching[1],given:draft.quality,answer:matching[1]},
+        {key:'direction',label:'Dirección',correct:draft.direction===String(direction),given:draft.direction==='1'?'Ascendente':draft.direction==='-1'?'Descendente':'',answer:direction===1?'Ascendente':'Descendente'}
+      ]);
+    },
     diagnose:()=>{
       const errors=[];
       if(!accepted.some(([number])=>number===Number(draft.number)))errors.push('Número del intervalo');
@@ -98,6 +107,7 @@ function intervalQuestion() {
       ]) {
         const wrapper=document.createElement('label');wrapper.append(label);
         const input=document.createElement('select');input.setAttribute('aria-label',label);input.add(new Option('Elegí…',''));
+        input.dataset.answerKey=key;
         options.forEach(([value,text])=>input.add(new Option(text,value)));input.value=draft[key]||'';
         input.addEventListener('change',()=>{draft[key]=input.value;update();container.saveAnswerDraft?.();});wrapper.append(input);row.append(wrapper);
       }

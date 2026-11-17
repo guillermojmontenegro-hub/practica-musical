@@ -122,6 +122,16 @@ export function drawStaff(host, score) {
     const first=rendered[voice][bar][index],last=rendered[voice][bar][index+1]||rendered[voice][bar+1]?.[0];
     if(last&&note.pitch===(notes[index+1]||bars[bar+1]?.[0])?.pitch){const group=context.openGroup('score-tie');group.setAttribute('data-tie-voice',String(voice));group.setAttribute('data-tie-bar',String(bar));new StaveTie({first_note:first,last_note:last,first_indices:[0],last_indices:[0]}).setContext(context).draw();context.closeGroup();}
   })));
+  if(score.review) {
+    function mark(attributes,correct,label) {
+      overlay(svg,'rect',{...attributes,class:'notation-result','data-result':correct?'correct':'incorrect',role:'img','aria-label':`${label}: ${correct?'correcto':'revisar'}`,rx:5});
+    }
+    if(score.review.signs)signs.forEach((pitch,index)=>mark({x:43+index*20,y:y(pitch)-18,width:22,height:36},score.review.signs[index],`Alteración ${index+1}`));
+    if(score.review.notes)rendered.forEach((bars,voice)=>bars.forEach((notes,bar)=>notes.forEach((note,index)=>{
+      const correct=score.review.notes[voice]?.[bar]?.[index];
+      if(typeof correct==='boolean')mark({x:note.getNoteHeadBeginX()-7,y:note.getYs()[0]-15,width:26,height:30},correct,`Voz ${voice+1}, compás ${bar+1}, nota ${index+1}`);
+    })));
+  }
   if(edit){
     const areas=edit==='signs'?[{x:44,width:width-59}]:measures.map((_,bar)=>({x:header+bar*available,width:available}));
     sources.forEach((_,voice)=>areas.forEach((area,bar)=>overlay(svg,'rect',{class:`staff-hit ${bar===active&&voice===activeVoice?'staff-active':''}`,'data-staff-bar':bar,'data-staff-voice':voice,x:area.x,y:10+voice*100,width:area.width,height:105,stroke:'none'})));
@@ -145,13 +155,14 @@ export function setNotation(score) {
   root ||= createRoot(document.getElementById('notation'));
   flushSync(()=>root.render(score ? React.createElement(Staff,{score}) : null));
 }
-export function showSolution(score,compare=false) {
-  const before={...current,edit:false,editNotes:false,selected:null};
+export function showSolution(score,compare=false,review) {
+  const before={...current,edit:false,editNotes:false,selected:null,review};
   current=score;
   const layoutBarWidth=Math.max(scoreBarWidth(before),scoreBarWidth(score));
   const submitted={...before,layoutBarWidth},reference={...score,layoutBarWidth};
   root ||= createRoot(document.getElementById('notation'));
   flushSync(()=>root.render(compare ? React.createElement(React.Fragment,null,
+    review&&React.createElement('p',{className:'correction-legend'},React.createElement('span',{className:'good-text'},'✓ Correcto'),React.createElement('span',{className:'bad-text'},'✕ Revisar')),
     React.createElement('p',{className:'staff-label'},'Tu transcripción'),React.createElement(Staff,{score:submitted}),
     React.createElement('p',{className:'staff-label'},'Referencia'),React.createElement(Staff,{score:reference})) : React.createElement(Staff,{score})));
 }
