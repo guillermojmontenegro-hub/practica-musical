@@ -6,7 +6,7 @@ import { assess } from '../grading.mjs';
 const scale = [0,2,4,5,7,9,11];
 const degrees = ['I','ii','iii','IV','V','vi'];
 const keys = [[0,0],[2,1],[4,2],[5,3],[7,4],[9,5],[10,6],[3,2]];
-// Common diatonic phrases; an occasional applied dominant replaces one chord.
+// Common diatonic phrases; an applied dominant may replace one chord according to the dominants option.
 const phrases = {
   4:[['I','IV','V','I'],['I','ii','V','I'],['I','vi','V','I']],
   5:[['I','vi','ii','V','I'],['I','IV','ii','V','I'],['I','vi','IV','V','I']],
@@ -19,20 +19,30 @@ const phrases = {
   7:[['I','iii','vi','IV','ii','V','I'],['I','IV','I','vi','ii','V','I']],
   8:[['I','iii','vi','IV','I','ii','V','I'],['I','IV','I','iii','vi','ii','V','I']]
 };
+// Whether an applied dominant may appear: 'mixed' keeps the original three-in-four mix.
+const dominantModes = {
+  mixed:'Hasta 1 dominante secundario.',
+  none:'Sin dominantes secundarios.',
+  always:'Incluye 1 dominante secundario.'
+};
 
 function noteName(pitch, letter) {
   const accidental = mod(pitch - naturals[mod(letter,7)] + 6,12) - 6;
   return letters[mod(letter,7)] + '♯'.repeat(Math.max(0,accidental)) + '♭'.repeat(Math.max(0,-accidental));
 }
 
-export function progressionQuestion({sevenths=false,oneOctave=true,chordCount=6}={}) {
+export function progressionQuestion({sevenths=false,oneOctave=true,chordCount=6,dominants='mixed'}={}) {
   chordCount = Object.hasOwn(phrases,chordCount) ? Number(chordCount) : 6;
+  const dominantMode = Object.hasOwn(dominantModes,dominants) ? dominants : 'mixed';
   const [tonic,letter] = pick(keys);
   const phrase = [...pick(phrases[chordCount])];
-  if (pick([false,false,false,true])) {
+  if (dominantMode !== 'none' && (dominantMode === 'always' || pick([false,false,false,true]))) {
     // Preserve the opening tonic and final V–I cadence, and resolve immediately.
-    const index = pick(Array.from({length:chordCount-3},(_,index)=>index+1).filter(index=>phrase[index+1]!=='I'));
-    phrase[index] = (sevenths ? 'V⁷/' : 'V/') + phrase[index+1];
+    const candidates = Array.from({length:chordCount-3},(_,index)=>index+1).filter(index=>phrase[index+1]!=='I');
+    if (candidates.length) {
+      const index = pick(candidates);
+      phrase[index] = (sevenths ? 'V⁷/' : 'V/') + phrase[index+1];
+    }
   }
   const chords = phrase.map((symbol,index)=>{
     const secondary = symbol.includes('/');
@@ -46,14 +56,14 @@ export function progressionQuestion({sevenths=false,oneOctave=true,chordCount=6}
     return {symbol,name,notes:intervals.map(interval=>bass+interval)};
   });
   let draft = {};
-  const options = [...degrees,...degrees.slice(1).map(degree=>(sevenths ? 'V⁷/' : 'V/')+degree)].map(value=>[value,value]);
+  const options = [...degrees,...(dominantMode==='none' ? [] : degrees.slice(1).map(degree=>(sevenths ? 'V⁷/' : 'V/')+degree))].map(value=>[value,value]);
   return {
-    context:`${noteName(tonic,letter)} mayor · ${chordCount} acordes · Hasta 1 dominante secundario.`,
+    context:`${noteName(tonic,letter)} mayor · ${chordCount} acordes · ${dominantModes[dominantMode]}`,
     events:chords.flatMap((chord,index)=>chord.notes.map(note=>[note,index*2,1.8,.08])),
     steps:[{
       prompt:`El primero es I. Identificá los otros ${chordCount-1} acordes en orden.`,
       answer:phrase.join(' → '),
-      explanation:chords.map(chord=>`${chord.symbol}: ${chord.name}`).join(' · ') + '. Cada dominante secundario resuelve al grado indicado después de la barra.',
+      explanation:chords.map(chord=>`${chord.symbol}: ${chord.name}`).join(' · ') + (phrase.some(symbol=>symbol.includes('/')) ? '. Cada dominante secundario resuelve al grado indicado después de la barra.' : '.'),
       check:()=>phrase.every((symbol,index)=>draft['chord'+index]===symbol),
       evaluate:()=>assess(phrase.slice(1).map((symbol,index)=>({key:'chord'+(index+1),label:`Acorde ${index+2}`,correct:draft['chord'+(index+1)]===symbol,given:draft['chord'+(index+1)],answer:symbol}))),
       diagnose:()=>phrase.flatMap((symbol,index)=>draft['chord'+index]===symbol ? [] : [`Acorde ${index+1}: elegiste ${draft['chord'+index] || 'sin respuesta'}; era ${symbol}`]),

@@ -168,6 +168,7 @@ export function initExerciseUI(advance,practiceActive) {
     $('progression-sevenths-label').hidden = mode !== 'progressions';
     $('progression-octave-label').hidden = mode !== 'progressions';
     $('progression-count-label').hidden = mode !== 'progressions';
+    $('progression-dominants-label').hidden = mode !== 'progressions';
     $('harmony-context').hidden = !question.harmony;
     if (question.harmony) {
       const {homeKey,scale,chord} = question.harmony;
@@ -299,6 +300,7 @@ export function initExerciseUI(advance,practiceActive) {
   $('progression-sevenths').addEventListener('change',()=>newQuestion());
   $('progression-octave').addEventListener('change',()=>newQuestion());
   $('progression-count').addEventListener('change',()=>newQuestion());
+  $('progression-dominants').addEventListener('change',()=>newQuestion());
   window.addEventListener('keydown',event=>{
     if (document.getElementById('practice-page')?.hidden || document.querySelector('.workspace-main[inert]') || suspended || event.altKey || event.ctrlKey || event.metaKey || event.repeat || event.target.matches('input, select, textarea, summary')) return;
     const index = ['a','b','c','d'].indexOf(event.key.toLowerCase());

@@ -53,6 +53,11 @@ function initSettings(onChange) {
     preferences.progressionCount = Number($('progression-count').value);
     savePreferences();
   });
+  $('progression-dominants').value = ['none','always'].includes(preferences.progressionDominants) ? preferences.progressionDominants : 'mixed';
+  $('progression-dominants').addEventListener('change',()=>{
+    preferences.progressionDominants = $('progression-dominants').value;
+    savePreferences();
+  });
   $('progression-octave').checked = (preferences.progressionOneOctave ?? preferences.progressionAscending) !== false;
   $('progression-octave').addEventListener('change',()=>{
     preferences.progressionOneOctave = $('progression-octave').checked;

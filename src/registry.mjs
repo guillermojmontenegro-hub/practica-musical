@@ -19,7 +19,7 @@ const modes = {
   polyrhythm: {title:'Polirritmia 3 contra 2', icon:'3∶2', short:'Dictado a dos voces', description:'Escribí la voz melódica sobre el acompañamiento de dos golpes por pulso.', play:'Escuchar polirritmia', meter:true, create:()=>rhythmQuestion('poly')},
   tuplets: {title:'Grupos irregulares', icon:'⅗', short:'Dosillos a quintillos', description:'Transcribí dosillos, tresillos, cuatricillos y quintillos.', play:'Escuchar dictado', meter:true, create:()=>rhythmQuestion('tuplet')},
   intervals: {title:'Intervalos', icon:'↕', short:'Ascendentes y descendentes', description:'Identificá el intervalo y su dirección.', play:'Escuchar intervalo', create:intervalQuestion},
-  progressions: {title:'Progresión de acordes', icon:'→', short:'Acordes y sus grados', description:'Reconocé los acordes de una progresión, con un posible dominante secundario.', play:'Escuchar progresión', create:()=>progressionQuestion({sevenths:$('progression-sevenths').checked,oneOctave:$('progression-octave').checked,chordCount:Number($('progression-count').value)})}
+  progressions: {title:'Progresión de acordes', icon:'→', short:'Acordes y sus grados', description:'Reconocé los acordes de una progresión y elegí si incluye dominantes secundarias.', play:'Escuchar progresión', create:()=>progressionQuestion({sevenths:$('progression-sevenths').checked,oneOctave:$('progression-octave').checked,chordCount:Number($('progression-count').value),dominants:$('progression-dominants').value})}
 };
 
 export { modes };

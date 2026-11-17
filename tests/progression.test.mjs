@@ -42,3 +42,30 @@ test('progressions respect the selected length and applied dominants resolve to 
   const secondaryRate=secondaryCount/(secondaryCount+diatonicCount);
   assert.ok(secondaryRate>.15 && secondaryRate<.35,'secondary dominants appear occasionally; most exercises are diatonic');
 });
+
+test('the dominants option decides whether an applied dominant appears and how it is described',()=>{
+  const counted=new Set();
+  for(const chordCount of [4,5,6,7,8])for(const sevenths of [false,true])for(let seed=0;seed<120;seed++) {
+    const results={};
+    for(const mode of ['none','always','mixed'])results[mode]=withSeed(seed,()=>progressionQuestion({sevenths,chordCount,dominants:mode}));
+    const secondaries=mode=>results[mode].steps[0].answer.split(' → ').filter(symbol=>symbol.includes('/'));
+    assert.equal(secondaries('none').length,0,'the no-dominant option stays diatonic');
+    assert.match(results['none'].context,/Sin dominantes secundarios\./);
+    assert.ok(!results['none'].steps[0].explanation.includes('resuelve al grado'),'the resolution note only appears when a dominant sounds');
+    assert.equal(secondaries('always').length,1,'the with-dominant option adds exactly one applied dominant');
+    assert.match(results['always'].context,/Incluye 1 dominante secundario\./);
+    const symbols=results['always'].steps[0].answer.split(' → ');
+    const index=symbols.findIndex(symbol=>symbol.includes('/'));
+    assert.ok(index>0 && index<symbols.length-2,'the applied dominant keeps the opening tonic and the closing cadence');
+    assert.equal(symbols[index+1],symbols[index].split('/')[1],'the applied dominant resolves to the degree after it');
+    assert.equal(results['always'].events.filter(event=>event[1]===index*2).length,sevenths ? 4 : 3,'the applied dominant carries the selected chord tones');
+    assert.match(results.mixed.context,/Hasta 1 dominante secundario\./);
+    assert.ok(secondaries('mixed').length<=1,'the mixed option never stacks dominants');
+    if(secondaries('mixed').length)counted.add(`${chordCount}:${sevenths}:${seed}`);
+    for(const other of [undefined,'unexpected']) {
+      const question=withSeed(seed,()=>progressionQuestion({sevenths,chordCount,...(other===undefined?{}:{dominants:other})}));
+      assert.deepEqual([question.steps[0].answer,question.events,question.context],[results.mixed.steps[0].answer,results.mixed.events,results.mixed.context],'omitting or misspelling the option keeps the mixed behaviour');
+    }
+  }
+  assert.ok(counted.size>0 && counted.size<120*5*2,'the mixed option adds dominants sometimes but not always');
+});

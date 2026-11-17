@@ -100,3 +100,46 @@ test('sevenths switch regenerates the exercise, persists and excludes seventh an
   expect(await options()).not.toContain('V⁷/ii');
   await chooseExercise(page,0);await expect(toggle).toBeHidden();
 });
+
+test('the dominants option chooses whether the progression carries an applied dominant',async({page})=>{
+  await page.goto('/');await page.locator('.tab').first().waitFor();
+  await chooseExercise(page,12);
+  const control=page.getByRole('combobox',{name:'Dominantes secundarias en la progresión',exact:true});
+  const choices=()=>page.locator('#editor select').first().evaluate(node=>[...node.options].map(option=>option.value));
+  const currentAnswer=async()=>page.evaluate(async()=>{
+    const {withSeed}=await import('/src/dom.mjs');
+    const {modes}=await import('/src/registry.mjs');
+    const saved=JSON.parse(decodeURIComponent(document.cookie.split('; ').find(cookie=>cookie.startsWith('practica-ejercicio=')).split('=').slice(1).join('=')));
+    return withSeed(saved.seed,modes.progressions.create).steps[0].answer.split(' → ');
+  });
+  const solve=async symbols=>{
+    for(let index=1;index<symbols.length;index++)await selectValue(page,page.getByRole('combobox',{name:`Acorde ${index+1}`,exact:true}),symbols[index]);
+    await page.locator('#next').click();await expect(page.locator('#feedback')).toContainText('¡Correcto!');
+  };
+  await expect(control).toBeVisible();
+  await expect(page.locator('#progression-dominants')).toHaveValue('mixed');
+  await expect(page.locator('#context')).toContainText('Hasta 1 dominante secundario.');
+  expect(await choices()).toContain('V/ii');
+
+  await selectValue(page,control,'none');
+  await expect(page.locator('#progression-dominants')).toHaveValue('none');
+  await expect(page.locator('#context')).toContainText('Sin dominantes secundarios.');
+  expect(await choices()).toEqual(['','I','ii','iii','IV','V','vi']);
+  await expect(page.getByRole('combobox',{name:'Acorde 2',exact:true})).toContainText('Elegí…');
+  await expect(page.locator('#next')).toBeDisabled();
+  const diatonic=await currentAnswer();
+  expect(diatonic.some(symbol=>symbol.includes('/'))).toBe(false);
+  await solve(diatonic);
+  await page.reload();
+  await expect(page.locator('#progression-dominants')).toHaveValue('none');
+  await expect(page.locator('#context')).toContainText('Sin dominantes secundarios.');
+
+  await selectValue(page,control,'always');
+  await expect(page.locator('#context')).toContainText('Incluye 1 dominante secundario.');
+  expect(await choices()).toContain('V/V');
+  const withDominant=await currentAnswer();
+  expect(withDominant.filter(symbol=>symbol.includes('/'))).toHaveLength(1);
+  await solve(withDominant);
+  await page.reload();await expect(page.locator('#progression-dominants')).toHaveValue('always');
+  await chooseExercise(page,0);await expect(control).toBeHidden();
+});

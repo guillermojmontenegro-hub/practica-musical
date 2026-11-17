@@ -305,6 +305,7 @@ button,summary{-webkit-tap-highlight-color:transparent}
 
 /* Shared settings grid for every exercise. */
 .exercise-options{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));align-items:end;gap:12px;margin:16px 0;padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--surface-soft)}
+@media(min-width:1001px){.exercise-options{grid-template-columns:repeat(4,minmax(0,1fr))}}
 .exercise-options:not(:has(label:not([hidden]))),.exercise-filters:not(:has(label:not([hidden]))),.exercise-toggles:not(:has(label:not([hidden]))){display:none}
 .exercise-filters,.exercise-toggles{display:contents}
 .exercise-options .mode{display:grid;gap:6px;margin:0;min-width:0;min-height:0;font-size:13px;line-height:1.4;color:var(--muted)}
@@ -322,7 +323,7 @@ button,summary{-webkit-tap-highlight-color:transparent}
   .exercise-options{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding:10px}
   .exercise-options .custom-select-trigger{font-size:16px}
   .exercise-toggles .mode{margin-top:0;padding:9px 8px}
-  #progression-count-label{grid-column:1/-1}
+  #progression-count-label,#progression-dominants-label{grid-column:1/-1}
   .progression-selectors{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
 @media(max-width:360px){.exercise-toggles .mode{grid-column:1/-1}}
