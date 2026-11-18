@@ -34,7 +34,7 @@ export function drawStaff(host, score) {
   host.replaceChildren();
   const header=105+signs.length*20;
   const barWidth=score.layoutBarWidth??scoreBarWidth({...score,secondaryMeasures:secondary});
-  const count=Math.max(1,measures.length),width=Math.max(590,header+barWidth*count+15),height=secondary?300:180;
+  const count=Math.max(1,measures.length),width=Math.max(590,host.clientWidth,header+barWidth*count+15),height=secondary?300:180;
   const renderer=new Renderer(host,Renderer.Backends.SVG);renderer.resize(width,height);
   const context=renderer.getContext();context.setFillStyle('currentColor').setStrokeStyle('currentColor');
   const svg=host.querySelector('svg');svg.setAttribute('viewBox',`0 -25 ${width} ${height}`);svg.setAttribute('class','staff');svg.setAttribute('role','img');svg.setAttribute('aria-label',label);svg.style.minWidth=`${width}px`;
@@ -149,7 +149,18 @@ export function drawStaff(host, score) {
 }
 export function Staff({score}) {
   const ref=useRef(null);
-  useLayoutEffect(()=>{drawStaff(ref.current,score);},[score]);
+  useLayoutEffect(()=>{
+    const host=ref.current;
+    let width=host.clientWidth;
+    drawStaff(host,score);
+    const observer=new ResizeObserver(()=>{
+      if(host.clientWidth===width)return;
+      width=host.clientWidth;
+      drawStaff(host,score);
+    });
+    observer.observe(host);
+    return ()=>observer.disconnect();
+  },[score]);
   return React.createElement('div',{className:'score',ref});
 }
 let root;
