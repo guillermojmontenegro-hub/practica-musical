@@ -26,7 +26,11 @@ export function drawStaff(host, score) {
   const meter=score.meter||{top:4,bottom:4,beats:4,unit:2};
   let secondary=score.secondaryMeasures??null;
   if(!secondary&&backing.length) secondary=backing.map(bar=>bar.map((_,index)=>({pitch:4,length:meter.unit/2,...(meter.unit===3?{tuplet:{size:2,span:3,id:Math.floor(index/2)}}:{})})));
-  const sources=secondary?[measures,secondary]:[measures];
+  const grand=Boolean(score.staffPlan);
+  if(grand)secondary=measures.map((notes,bar)=>score.staffPlan[bar]==='fa'?notes:[]);
+  const primary=grand?measures.map((notes,bar)=>score.staffPlan[bar]==='sol'?notes:[]):measures;
+  const sources=secondary?[primary,secondary]:[primary];
+  const voiceClef=voice=>grand?(voice===0?'sol':'fa'):clef;
   host.replaceChildren();
   const header=105+signs.length*20;
   const barWidth=score.layoutBarWidth??scoreBarWidth({...score,secondaryMeasures:secondary});
@@ -39,7 +43,7 @@ export function drawStaff(host, score) {
   const rendered=sources.map(()=>[]);
   function engrave(source,voice) {
     const notes=source.map(note=>{
-      const result=new StaveNote({clef:voice===0&&clef==='fa'&&!rhythm?'bass':'treble',keys:note.rest?[voice===0&&clef==='fa'&&!rhythm?'d/3':'b/4']:voice===1?[`b/4/${noteSpelling(note).innerLength>=8?'x0':noteSpelling(note).innerLength>=4?'x1':'x2'}`]:[pitchKey(note.pitch)],duration:noteDuration(note),...(voice===1?{stem_direction:-1}:{auto_stem:true})});
+      const result=new StaveNote({clef:(grand||voice===0)&&voiceClef(voice)==='fa'&&!rhythm?'bass':'treble',keys:note.rest?[(grand||voice===0)&&voiceClef(voice)==='fa'&&!rhythm?'d/3':'b/4']:voice===1&&!grand?[`b/4/${noteSpelling(note).innerLength>=8?'x0':noteSpelling(note).innerLength>=4?'x1':'x2'}`]:[pitchKey(note.pitch)],duration:noteDuration(note),...(voice===1&&!grand?{stem_direction:-1}:{auto_stem:true})});
       if(noteSpelling(note).dots) Dot.buildAndAttach([result]);
       return result;
     });
@@ -54,8 +58,8 @@ export function drawStaff(host, score) {
     const x=bar===0?10:header+bar*available,end=header+(bar+1)*available;
     const stacks=sources.map((bars,voice)=>{
       const stave=new Stave(x,-4+voice*100,end-x).setContext(context);
-      if(bar===0)stave.addClef(rhythm||voice===1?'percussion':clef==='fa'?'bass':'treble');
-      const group=context.openGroup(`voice-${voice+1}-staff`);group.setAttribute('data-voice',String(voice+1));group.setAttribute('data-bar',String(bar));stave.draw();context.closeGroup();
+      if(bar===0)stave.addClef(rhythm||(voice===1&&!grand)?'percussion':voiceClef(voice)==='fa'?'bass':'treble');
+      const group=context.openGroup(`voice-${voice+1}-staff`);group.setAttribute('data-voice',String(voice+1));if(grand)group.setAttribute('data-clef',voiceClef(voice));group.setAttribute('data-bar',String(bar));stave.draw();context.closeGroup();
       if(bar===0){
         if(voice===0)signs.forEach((pitch,index)=>Glyph.renderGlyph(context,49+index*20,y(pitch),38,symbol==='♭'?'accidentalFlat':'accidentalSharp'));
         if(showMeter)new TimeSignature(`${meter.top}/${meter.bottom}`).setStave(stave).setX(53+signs.length*20).setContext(context).draw();
@@ -99,7 +103,7 @@ export function drawStaff(host, score) {
       });
     });
     guides.forEach(pitch=>overlay(svg,'path',{class:'staff-guide',d:`M${header+bar*available} ${y(pitch)}H${end}`}));
-    if(secondary){
+    if(secondary&&!grand){
       const anchors=[];
       stacks.forEach(({source,notes})=>{let offset=0;source.forEach((note,index)=>{anchors.push({offset,x:notes[index].getNoteHeadBeginX()+4});offset+=note.length;});});
       anchors.push({offset:meter.beats*meter.unit,x:end-12});anchors.sort((a,b)=>a.offset-b.offset);
@@ -114,7 +118,7 @@ export function drawStaff(host, score) {
       }
     }
   }
-  if(secondary)for(const [voice,label] of [[0,'Voz 1 · Redoblante'],[1,'Voz 2 · Platillo']]){
+  if(secondary&&!grand)for(const [voice,label] of [[0,'Voz 1 · Redoblante'],[1,'Voz 2 · Platillo']]){
     const text=document.createElementNS(svgNS,'text');text.setAttribute('x','10');text.setAttribute('y',String(18+voice*100));text.setAttribute('class','voice-label');text.textContent=label;svg.append(text);
   }
   sources.forEach((bars,voice)=>bars.forEach((notes,bar)=>notes.forEach((note,index)=>{

@@ -2,7 +2,27 @@ import { pick } from './dom.mjs';
 import { midi } from './music.mjs';
 import { sumNotes, tupletNotes, tupletSpan, soundingNotes } from './score-model.mjs';
 
-export function generateMelody(meter,pitches,tonic,barCount=4) {
+// Diatonic steps that stay within one added ledger line for each staff. The
+// shared Si3-Re4 window is where a melody moves from one pentagram to the other.
+export const staffRanges={fa:[-9,1],sol:[-1,9]};
+const crossoverRange=[-4,4];
+const crossStaffPitches=Array.from({length:staffRanges.sol[1]-staffRanges.fa[0]+1},(_,index)=>staffRanges.fa[0]+index);
+const otherStaff=clef=>clef==='fa'?'sol':'fa';
+const clampRange=(value,[low,high])=>Math.min(Math.max(value,low),high);
+// The last bar of a run stays near the shared window so the hand-off leap stays small.
+function staffBounds(plan,bar) {
+  const current=staffRanges[plan[bar]];
+  if(!plan[bar+1]||plan[bar]===plan[bar+1]) return current;
+  return [Math.max(current[0],crossoverRange[0]),Math.min(current[1],crossoverRange[1])];
+}
+// One change of staff per phrase: the clef each bar belongs to.
+function pickStaffPlan(barCount) {
+  const first=pick(['fa','sol']);
+  const split=pick(Array.from({length:barCount-1},(_,index)=>index+1));
+  return Array.from({length:barCount},(_,bar)=>bar<split?first:otherStaff(first));
+}
+
+export function generateMelody(meter,pitches,tonic,barCount=4,{plan=null}={}) {
   barCount=Number(barCount)===2?2:4;
   const capacity=meter.beats*meter.unit;
   const feature=pick(['syncopation','group2','group3','group4','group5','crossTie']);
@@ -11,6 +31,8 @@ export function generateMelody(meter,pitches,tonic,barCount=4) {
   const regular=()=>({pitch:last,length:1});
   const measures=Array.from({length:barCount},(_,bar)=>{
     const notes=[];
+    const bounds=plan?staffBounds(plan,bar):null;
+    if(bounds) last=clampRange(last,bounds);
     if(bar===target&&feature==='syncopation') {
       notes.push(...[1,1,1,1].map(length=>({pitch:last,length})));
       notes[1].tie=true;
@@ -28,7 +50,7 @@ export function generateMelody(meter,pitches,tonic,barCount=4) {
       const newNotes=tool.startsWith('group') ? tupletNotes(Number(tool.slice(5)),tupletSpan(Number(tool.slice(5)),meter.unit),last,groupId++) : [{...regular(),length:Number(tool)}];
       for(const note of newNotes) {
         note.pitch=last;
-        last=pick(pitches.filter(pitch=>Math.abs(pitch-last)<=2));
+        last=pick(pitches.filter(pitch=>Math.abs(pitch-last)<=2&&(!bounds||pitch>=bounds[0]&&pitch<=bounds[1])));
       }
       notes.push(...newNotes);
     }
@@ -38,14 +60,30 @@ export function generateMelody(meter,pitches,tonic,barCount=4) {
   // Keep tied notes at the same pitch, including across a barline.
   const notes=measures.flat();
   notes.forEach((note,index)=>{if(note.tie) notes[index+1].pitch=note.pitch;});
-  if(feature==='crossTie'||pick([true,false,false])) {
-    const bar=pick(Array.from({length:barCount-1},(_,index)=>index));
+  // A tie may only cross a barline when both bars share the same staff.
+  const crossings=Array.from({length:barCount-1},(_,index)=>index).filter(index=>!plan||plan[index]===plan[index+1]);
+  if(crossings.length&&(feature==='crossTie'||pick([true,false,false]))) {
+    const bar=pick(crossings);
     const from=measures[bar].at(-1),to=measures[bar+1][0];
     from.tie=true;to.pitch=from.pitch;
     // An incoming tie can change a note that already starts another tie.
     notes.forEach((note,index)=>{if(note.tie&&notes[index+1]) notes[index+1].pitch=note.pitch;});
   }
   return measures;
+}
+
+// A single phrase that starts in one staff and continues in the other.
+export function generateCrossStaffMelody(meter,barCount=4) {
+  const plan=pickStaffPlan(barCount);
+  const measures=generateMelody(meter,crossStaffPitches,0,barCount,{plan});
+  const systems=[];
+  plan.forEach((clef,bar)=>{
+    const current=systems.at(-1);
+    if(current&&current.clef===clef) current.measures.push(measures[bar]);
+    else systems.push({clef,measures:[measures[bar]]});
+  });
+  const changeBar=plan.findIndex(clef=>clef!==plan[0]);
+  return {measures,systems,plan,changeBar};
 }
 // Short, stepwise phrases for initial sight-singing practice.
 export function generateSingingMelody(meter,tonic) {

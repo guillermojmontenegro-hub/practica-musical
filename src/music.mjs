@@ -32,6 +32,11 @@ const mod = (value, divisor) => ((value % divisor) + divisor) % divisor;
 const pitchLabel = note => letters[mod(note,7)] + (4 + Math.floor(note/7));
 const midi = note => 60 + 12*Math.floor(note/7) + naturals[mod(note,7)];
 const clefLabel = clef => clef === 'sol' ? 'Sol' : 'Fa';
+const clefChoices = ['sol','fa','both'];
+function selectClef() {
+  const value = $('sight-clef')?.value;
+  return clefChoices.includes(value) ? value : 'sol';
+}
 function selectMeter() {
   const family = $('meter-choice').value;
   return pick(family === 'mixed' ? [...meters.simple,...meters.compound] : meters[family]);
@@ -43,4 +48,4 @@ function countIn(meter) {
   return Array.from({length:meter.beats},(_,index)=>[index===0 ? 84 : 79,index,.09,countInLevel,'click']);
 }
 
-export { letters, naturals, pitchNames, meters, clefs, figures, figureDefinitions, baseFigureTools, mod, pitchLabel, midi, clefLabel, selectMeter, meterLabel, countIn };
+export { letters, naturals, pitchNames, meters, clefs, figures, figureDefinitions, baseFigureTools, mod, pitchLabel, midi, clefLabel, clefChoices, selectClef, selectMeter, meterLabel, countIn };

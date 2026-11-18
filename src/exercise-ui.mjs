@@ -160,6 +160,7 @@ export function initExerciseUI(advance,practiceActive) {
     $('playLabel').textContent = playLabel || '';
     $('listen').hidden = !playLabel;
     $('meter-filter').hidden = !meter;
+    for(const id of ['sight-clef-label','sight-difficulty-label']) $(id).hidden=!['sightRead','sightSing'].includes(mode);
     $('dictation-bars-label').hidden = mode !== 'dictation';
     $('key-practice-filter').hidden=mode!=='keyRead';
     $('rhythm-pitches-label').hidden = !question.rhythmPitches;
@@ -293,6 +294,7 @@ export function initExerciseUI(advance,practiceActive) {
     advance();
     focusQuestion();
   });
+  for(const id of ['sight-clef','sight-difficulty']) $(id).addEventListener('change',()=>newQuestion());
   $('meter-choice').addEventListener('change',()=>newQuestion());
   $('dictation-bars').addEventListener('change',()=>newQuestion());
   $('key-practice').addEventListener('change',()=>newQuestion());
