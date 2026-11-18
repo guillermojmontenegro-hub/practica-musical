@@ -16,6 +16,13 @@ let exercise;
 let alarm;
 let sampleOutput;
 const sampleNames={piano:'acoustic_grand_piano',guitar:'acoustic_guitar_nylon',flute:'flute',clarinet:'clarinet',marimba:'marimba'};
+// Scores are finite and fully known before playback. Submit all notes to the
+// audio clock now: a timer-driven lookahead can dispatch them late when the
+// main thread is busy or a background tab throttles JavaScript timers.
+const scoreScheduler={
+  schedule(event,callback){callback(event);return ()=>{};},
+  stop(){}
+};
 const sampled=new Map();
 const loading=new Map();
 async function prepareExerciseAudio(events,{instrument}) {
@@ -25,7 +32,7 @@ async function prepareExerciseAudio(events,{instrument}) {
     if(!loading.has(name)) loading.set(name,(async()=>{
       const {Soundfont,Sampler}=await import('smplr');
       sampleOutput ||= instrumentOutput(audio);
-      const player=instruments[name]?.percussion?Sampler(audio,{destination:percussionOutput(audio,name,sampleOutput),detune:0,lpfCutoffHz:20000,decayTime:.025,buffers:{C4:`/sounds/${name}.m4a`},volume:100}):Soundfont(audio,{destination:sampleOutput,instrument:sampleNames[name],kit:'FluidR3_GM',
+      const player=instruments[name]?.percussion?Sampler(audio,{scheduler:scoreScheduler,destination:percussionOutput(audio,name,sampleOutput),detune:0,lpfCutoffHz:20000,decayTime:.025,buffers:{C4:`/sounds/${name}.m4a`},volume:100}):Soundfont(audio,{scheduler:scoreScheduler,destination:sampleOutput,instrument:sampleNames[name],kit:'FluidR3_GM',
         notesToLoad:{notes:Array.from({length:61},(_,i)=>36+i),fallback:'nearest'},
         ...melodicSampleOptions(name),loadLoopData:true});
       try {await player.ready;sampled.set(name,player);return true;}

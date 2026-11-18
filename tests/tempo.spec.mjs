@@ -43,3 +43,50 @@ test('tempo units are explicit and the compound metronome keeps its pulse when s
   expect(times[2]-times[0]).toBeCloseTo(subdivided?2/3:2,5);
  }
 });
+
+test('score playback keeps notes on time while the interface is busy',async({page})=>{
+ await page.goto('/');
+ const result=await page.evaluate(async()=>{
+  const engine=await import('/src/audio.mjs');
+  await engine.unlockAudio();
+  const loaded=await engine.prepareExerciseAudio([[60,0,.1,.16]],{instrument:'piano'});
+  const starts=[],original=AudioBufferSourceNode.prototype.start;
+  AudioBufferSourceNode.prototype.start=function(time,...args){
+   starts.push({time,now:this.context.currentTime});return original.call(this,time,...args);
+  };
+  try {
+   const events=Array.from({length:12},(_,i)=>[60+i%5,i*.25,.2,.16]);
+   engine.playExercise(events,{instrument:'piano',bpm:120},()=>{});
+   // A render or background-tab timer delay must not bunch later notes together.
+   const until=performance.now()+700;
+   while(performance.now()<until){}
+   await new Promise(resolve=>setTimeout(resolve,1600));
+   return {loaded,starts};
+  } finally {engine.stopExerciseAudio();AudioBufferSourceNode.prototype.start=original;}
+ });
+ expect(result.loaded).toBe(true);
+ expect(result.starts).toHaveLength(12);
+ for(const {time,now} of result.starts)expect(time-now,'notes must be scheduled before their audio deadline').toBeGreaterThanOrEqual(0);
+});
+
+test('stopping a pre-scheduled score cancels notes before their future onset',async({page})=>{
+ await page.goto('/');
+ const records=await page.evaluate(async()=>{
+  const engine=await import('/src/audio.mjs');await engine.unlockAudio();
+  await engine.prepareExerciseAudio([[60,0,.1,.16]],{instrument:'piano'});
+  const records=[],original=AudioContext.prototype.createBufferSource;
+  AudioContext.prototype.createBufferSource=function(...args){
+   const source=original.apply(this,args),record={};records.push(record);
+   const start=source.start.bind(source),stop=source.stop.bind(source);
+   source.start=(time,...args)=>{record.start=time;return start(time,...args);};
+   source.stop=time=>{record.stop=time??this.currentTime;return stop(time);};
+   return source;
+  };
+  try {
+   engine.playExercise([[60,1,.3,.16],[64,2,.3,.16],[67,3,.3,.16]],{instrument:'piano',bpm:60},()=>{});
+   engine.stopExerciseAudio();return records;
+  } finally {AudioContext.prototype.createBufferSource=original;engine.stopExerciseAudio();}
+ });
+ expect(records).toHaveLength(3);
+ records.forEach(record=>expect(record.stop).toBeLessThan(record.start));
+});
