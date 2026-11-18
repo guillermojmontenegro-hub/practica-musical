@@ -1,23 +1,22 @@
 import { pick } from './dom.mjs';
-import { generateMelody, generateSingingMelody } from './melody-patterns.mjs';
+import { generateMelody } from './melody-patterns.mjs';
 
 export const solfegeLevels = {
-  beginner:{label:'Inicial',description:'Grados conjuntos y ritmos simples',step:1,radius:4},
-  intermediate:{label:'Intermedio',description:'Saltos de tercera y subdivisiones del pulso',step:2,radius:7},
-  advanced:{label:'Avanzado',description:'Saltos de cuarta, síncopas y grupos irregulares',step:3,radius:9}
+  beginner:{label:'Inicial',description:'Grados conjuntos y ritmos simples',step:1},
+  intermediate:{label:'Intermedio',description:'Saltos de tercera y subdivisiones del pulso',step:2},
+  advanced:{label:'Avanzado',description:'Saltos de cuarta, síncopas y grupos irregulares',step:3}
 };
 
-// Each bar belongs to exactly one staff: the other staff remains empty.
+// Diatonic coordinates relative to middle C (Do4). Register is independent of level.
+export const solfegeRanges={fa:[-14,0],sol:[0,14],both:[-14,14]};
+
 export function generateSolfege(meter,{type='sightRead',clef='sol',difficulty='beginner'}={}) {
   const level=solfegeLevels[difficulty]||solfegeLevels.beginner;
   const count=type==='sightSing'&&difficulty==='beginner'?2:4;
-  const first=clef==='both'?pick(['sol','fa']):clef;
-  const plan=Array.from({length:count},(_,bar)=>clef==='both'&&
-    (difficulty==='advanced'?bar%2:bar>=count/2)?(first==='sol'?'fa':'sol'):first);
-  const tonic=clef==='both'?0:first==='sol'?0:-7;
-  // Keep the established short, stepwise introduction to singing.
-  if(type==='sightSing'&&difficulty==='beginner'&&clef!=='both')
-    return {measures:generateSingingMelody(meter,tonic),plan};
+  const [low,high]=solfegeRanges[clef];
+  const pitches=Array.from({length:high-low+1},(_,i)=>low+i);
+  // Start throughout the available register, including its two endpoints.
+  const tonic=pick(pitches);
   let measures;
   if(difficulty==='advanced') measures=generateMelody(meter,[tonic],tonic,count);
   else measures=Array.from({length:count},()=>Array.from({length:meter.beats},()=>{
@@ -25,19 +24,26 @@ export function generateSolfege(meter,{type='sightRead',clef='sol',difficulty='b
     return (split?(meter.unit===3?[1,2]:[1,1]):[meter.unit]).map(length=>({pitch:tonic,length}));
   }).flat());
   let previous=tonic;
+  let direction=tonic<(low+high)/2?1:-1;
+  const plan=[];
   measures.forEach((bar,index)=>{
-    const low=clef==='both'?(plan[index]==='fa'?-level.radius:-1):tonic;
-    const high=clef==='both'?(plan[index]==='fa'?1:level.radius):tonic+level.radius;
+    // Switch near middle C when the phrase reaches the other register,
+    // rather than pulling every bar back to middle C to force a switch.
+    const staff=clef==='both'?(previous<0||previous===0&&direction<0?'fa':'sol'):clef;
+    plan.push(staff);
+    const bottom=clef==='both'?(staff==='fa'?low:-1):low;
+    const top=clef==='both'?(staff==='fa'?1:high):high;
     bar.forEach((note,n)=>{
-      const remaining=bar.length-n-1+(clef==='both'?0:measures.slice(index+1).flat().length);
-      const end=clef==='both'?0:tonic;
-      const candidates=Array.from({length:high-low+1},(_,i)=>low+i).filter(pitch=>
-        Math.abs(pitch-previous)<=level.step&&
-        // Return near middle C before each transfer; finish single-staff phrases on the tonic.
-        Math.abs(pitch-end)<=remaining*level.step);
-      note.pitch=index===0&&n===0?tonic:pick(candidates);
+      const candidates=pitches.filter(pitch=>pitch>=bottom&&pitch<=top&&Math.abs(pitch-previous)<=level.step);
+      if(index===0&&n===0)note.pitch=tonic;
+      else {
+        if(previous===low)direction=1;
+        if(previous===high)direction=-1;
+        const forward=candidates.filter(pitch=>(pitch-previous)*direction>0);
+        // Favor a broad phrase contour while retaining occasional repetitions and turns.
+        note.pitch=pick(forward.length? [...forward,...forward,...candidates]:candidates);
+      }
       previous=note.pitch;
-      // Rebuild ties only when their generated pitches actually agree.
       delete note.tie;
     });
   });

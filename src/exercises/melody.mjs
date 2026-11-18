@@ -45,7 +45,7 @@ function solfegeQuestion(type,{clef=selectClef(),difficulty=$('sight-difficulty'
   const {measures,plan}=generateSolfege(meter,{type,clef,difficulty});
   const both=clef==='both';
   const level=solfegeLevels[difficulty];
-  const context=`${both?'Claves de sol y fa':`Clave de ${clefLabel(clef)}`} · ${meterLabel(meter)} · ${level.label}: ${level.description}`;
+  const context=`${both?'Claves de sol y fa':`Clave de ${clefLabel(clef)}`} · ${meterLabel(meter)} · ${level.label}: ${level.description} · ${both?'Do2–Do6':clef==='fa'?'Do2–Do4':'Do4–Do6'}`;
   const notation=staff({clef:both?'sol':clef,meter,measures,
     ...(both?{staffPlan:plan}:{}),label:`${context}, melodía de ${measures.length} compases`});
   const reference=referenceEvents(measures,meter);

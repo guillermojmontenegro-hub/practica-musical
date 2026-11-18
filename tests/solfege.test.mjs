@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { generateSolfege, solfegeLevels } from '../src/solfege.mjs';
+import { generateSolfege, solfegeLevels, solfegeRanges } from '../src/solfege.mjs';
 import { meters, midi } from '../src/music.mjs';
 import { sumNotes } from '../src/score-model.mjs';
 import { withSeed } from '../src/dom.mjs';
@@ -22,7 +22,8 @@ test('every solfege level fills bars and respects melodic leaps across both stav
   });
   const notes=measures.flat();
   notes.slice(1).forEach((note,index)=>assert.ok(Math.abs(note.pitch-notes[index].pitch)<=solfegeLevels[difficulty].step));
-  if(clef==='both') assert.equal(new Set(plan).size,2);
+  const [low,high]=solfegeRanges[clef];
+  notes.forEach(note=>assert.ok(note.pitch>=low&&note.pitch<=high));
  }
 });
 
@@ -35,7 +36,23 @@ test('singing reference starts on the first written pitch in every clef and leve
    assert.equal(question.events[0][0],midi(question.notation.measures[0][0].pitch));
    assert.ok(question.fullMelody.length>0);
    assert.equal(question.events.filter(event=>event[4]==='click').length,question.notation.meter.beats*(question.notation.measures.length+1));
-   if(clef==='both')assert.ok(question.notation.staffPlan.includes('fa'));
+   if(clef==='both')assert.equal(question.notation.staffPlan.length,question.notation.measures.length);
   }
  } finally {globalThis.document=previous;}
+});
+
+test('all difficulties and solfege types reach both ends of the full register',()=>{
+ const meter=meters.simple[2];
+ for(const type of ['sightRead','sightSing']) for(const difficulty of Object.keys(solfegeLevels))
+ for(const clef of ['sol','fa','both']) {
+  const seen=new Set();let transfers=0;
+  for(let seed=0;seed<1000;seed++) {
+   const {measures,plan}=withSeed(seed*7919,()=>generateSolfege(meter,{type,clef,difficulty}));
+   measures.flat().forEach(note=>seen.add(note.pitch));
+   if(new Set(plan).size===2)transfers++;
+  }
+  const [low,high]=solfegeRanges[clef];
+  for(let pitch=low;pitch<=high;pitch++) assert.ok(seen.has(pitch),`${type}, ${difficulty}, ${clef}: missing ${pitch}`);
+  if(clef==='both') assert.ok(transfers>0);
+ }
 });
