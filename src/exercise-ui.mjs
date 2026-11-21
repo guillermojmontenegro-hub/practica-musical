@@ -1,4 +1,4 @@
-import {tempoUnitLabel} from './music.mjs';
+import {meterLabel, meterRound, tempoUnitLabel} from './music.mjs';
 import {claimAudio} from './audio-session.mjs';
 import { setNotation, showSolution } from './notation.mjs';
 import { readStorage, writeCookie } from './storage.mjs';
@@ -14,6 +14,7 @@ export function initExerciseUI(advance,practiceActive) {
   const draftKey = 'practica-ejercicio';
   const statsKey = 'practica-musical-v1';
   let pending = readStorage(draftKey);
+  const meterRounds=pending.meterRounds??{};
   const attempts = Object.fromEntries(Object.keys(modes).map(id=>[id,0]));
   let seed, staffDraft, savedDraftLength, outcomes=[], fieldDraft={};
   const staffKey = 'practica-edicion';
@@ -117,7 +118,8 @@ export function initExerciseUI(advance,practiceActive) {
     if (!question) return;
     const savedOutcomes=outcomes.map(({items,...result})=>question.steps.length>1?{...result,items}:result);
     const dictationOptions=mode==='dictation'?{barCount:question.notation.measures.length,difficulty:$('dictation-difficulty').value}:{};
-    writeCookie(draftKey,{mode,seed,step,selected,firstCorrect,listens,sound,grade:restoredGrade,outcomes:savedOutcomes,fields:fieldDraft,...dictationOptions});
+    const signature=modes[mode].meter?meterLabel(question.notation.meter):undefined;
+    writeCookie(draftKey,{mode,seed,step,selected,firstCorrect,listens,sound,grade:restoredGrade,outcomes:savedOutcomes,fields:fieldDraft,signature,meterRounds,...dictationOptions});
   }
   function newQuestion(restore) {
     if(mode==='dictation'&&restore) {
@@ -135,8 +137,14 @@ export function initExerciseUI(advance,practiceActive) {
     }
     stopAudio();
     seed = restore?.seed ?? Math.floor(Math.random()*4294967296);
+    let signature=restore?.signature;
+    if(modes[mode].meter&&!restore) {
+      const family=$('meter-choice').value;
+      if(!meterRounds[family]?.length) meterRounds[family]=meterRound(family);
+      signature=meterRounds[family].shift();
+    }
     question = withSeed(seed,()=>{
-      const item = modes[mode].create();
+      const item = modes[mode].create({signature});
       item.steps.forEach(part=>{if (part.options) part.options = shuffle(part.options);});
       return item;
     });

@@ -90,7 +90,7 @@ async function writePartialScore(page) {
     const {withSeed}=await import('/src/dom.mjs'),{modes}=await import('/src/registry.mjs');
     const {clefs}=await import('/src/music.mjs'),{writeCookie}=await import('/src/storage.mjs');
     const saved=JSON.parse(decodeURIComponent(document.cookie.split('; ').find(cookie=>cookie.startsWith('practica-ejercicio=')).split('=').slice(1).join('=')));
-    let score=withSeed(saved.seed,modes[saved.mode].create).steps[0].solution;
+    let score=withSeed(saved.seed,()=>modes[saved.mode].create({signature:saved.signature})).steps[0].solution;
     while(saved.mode==='keyWrite'&&!score.signs.length) {
       saved.seed++;score=withSeed(saved.seed,modes[saved.mode].create).steps[0].solution;
     }

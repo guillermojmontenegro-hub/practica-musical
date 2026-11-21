@@ -1,4 +1,4 @@
-import { $, pick } from './dom.mjs';
+import { $, pick, shuffle } from './dom.mjs';
 import { countInLevel } from './audio-levels.mjs';
 
 const letters = ['Do','Re','Mi','Fa','Sol','La','Si'];
@@ -37,9 +37,21 @@ function selectClef() {
   const value = $('sight-clef')?.value;
   return clefChoices.includes(value) ? value : 'sol';
 }
-function selectMeter() {
+// Each signature appears once per round. In mixed practice the two compound
+// signatures fall between simple ones, even when two rounds meet.
+export function meterRound(family) {
+  if(family!=='mixed') return shuffle(meters[family]).map(meterLabel);
+  const simple=shuffle(meters.simple);
+  const compound=shuffle(meters.compound);
+  return simple.flatMap((meter,index)=>compound[index]?[meter,compound[index]]:[meter]).map(meterLabel);
+}
+
+function selectMeter(signature) {
   const family = $('meter-choice').value;
-  return pick(family === 'mixed' ? [...meters.simple,...meters.compound] : meters[family]);
+  const choices=family==='mixed'?[...meters.simple,...meters.compound]:meters[family];
+  // Keep the seeded draw so older drafts regenerate the same notes on every reload.
+  const drawn=pick(choices);
+  return choices.find(meter=>meterLabel(meter)===signature)??drawn;
 }
 
 export const tempoUnitLabel=meter=>meter.unit===3?'negra con puntillo':'negra';

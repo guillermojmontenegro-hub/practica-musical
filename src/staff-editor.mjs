@@ -115,7 +115,8 @@ function staffEditor(container,{tools,draw,ready,place,undo,status,editable=fals
     remove.setAttribute('aria-label',notes[selected]?.tuplet?'Eliminar grupo':'Eliminar nota');remove.title=remove.getAttribute('aria-label');
     const marker=panel.querySelector('.staff-cursor');marker?.setAttribute('y1',76+voice*100-cursor*5);marker?.setAttribute('y2',76+voice*100-cursor*5);
     $('next').disabled=!ready();
-    output.textContent=(status?.(active,voice)||'')+(selected!==null?` · ${notes[selected].rest?'Silencio seleccionado':pitchLabel(notes[selected].pitch)+' seleccionada'}`:'')+(error?` · ${error}`:'');output.dataset.error=String(Boolean(error));
+    const cursorLabel=score.edit===true&&score.pitches&&!silent?` · Cursor en ${pitchLabel(clefs[score.clef].bottom+cursor)}`:'';
+    output.textContent=(status?.(active,voice)||'')+(selected!==null?` · ${notes[selected].rest?'Silencio seleccionado':pitchLabel(notes[selected].pitch)+' seleccionada'}`:cursorLabel)+(error?` · ${error}`:'');output.dataset.error=String(Boolean(error));
   }
   panel.tabIndex=0;
   panel.setAttribute('aria-label','Editor de partitura. Tocá para escribir, seleccioná una nota y usá símbolos o arrastrá para editar. Flechas para compás y altura; Intro para escribir; Suprimir para eliminar.');

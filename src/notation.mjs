@@ -34,11 +34,14 @@ export function drawStaff(host, score) {
   host.replaceChildren();
   const header=105+signs.length*20;
   const barWidth=score.layoutBarWidth??scoreBarWidth({...score,secondaryMeasures:secondary});
-  const count=Math.max(1,measures.length),width=Math.max(590,host.clientWidth,header+barWidth*count+15),height=secondary?300:180;
+  const y=pitch=>76-(pitch-clefs[clef].bottom)*5;
+  const hitTop=measures.length&&!rhythm&&score.pitches?.length?Math.min(10,y(Math.max(...score.pitches))-10):10;
+  const viewTop=Math.min(-25,hitTop-35);
+  const count=Math.max(1,measures.length),width=Math.max(590,host.clientWidth,header+barWidth*count+15);
+  const height=(secondary?275:155)-viewTop;
   const renderer=new Renderer(host,Renderer.Backends.SVG);renderer.resize(width,height);
   const context=renderer.getContext();context.setFillStyle('currentColor').setStrokeStyle('currentColor');
-  const svg=host.querySelector('svg');svg.setAttribute('viewBox',`0 -25 ${width} ${height}`);svg.setAttribute('class','staff');svg.setAttribute('role','img');svg.setAttribute('aria-label',label);svg.style.minWidth=`${width}px`;
-  const y=pitch=>76-(pitch-clefs[clef].bottom)*5;
+  const svg=host.querySelector('svg');svg.setAttribute('viewBox',`0 ${viewTop} ${width} ${height}`);svg.setAttribute('class','staff');svg.setAttribute('role','img');svg.setAttribute('aria-label',label);svg.style.minWidth=`${width}px`;
   const available=(width-header-15)/count;
   const rendered=sources.map(()=>[]);
   function engrave(source,voice) {
@@ -138,7 +141,7 @@ export function drawStaff(host, score) {
   }
   if(edit){
     const areas=edit==='signs'?[{x:44,width:width-59}]:measures.map((_,bar)=>({x:header+bar*available,width:available}));
-    sources.forEach((_,voice)=>areas.forEach((area,bar)=>overlay(svg,'rect',{class:`staff-hit ${bar===active&&voice===activeVoice?'staff-active':''}`,'data-staff-bar':bar,'data-staff-voice':voice,x:area.x,y:10+voice*100,width:area.width,height:105,stroke:'none'})));
+    sources.forEach((_,voice)=>areas.forEach((area,bar)=>overlay(svg,'rect',{class:`staff-hit ${bar===active&&voice===activeVoice?'staff-active':''}`,'data-staff-bar':bar,'data-staff-voice':voice,x:area.x,y:hitTop+voice*100,width:area.width,height:115-hitTop,stroke:'none'})));
     if(editNotes&&edit==='signs')signs.forEach((pitch,index)=>overlay(svg,'rect',{class:`staff-note-hit ${index===selected?'note-selected':''}`,'data-note-bar':0,'data-note-voice':0,'data-note-index':index,'data-pitch':pitch,x:44+index*20,y:y(pitch)-14,width:20,height:30,rx:4,fill:'transparent',stroke:'none'}));
     else if(editNotes)sources.forEach((bars,voice)=>rendered[voice].forEach((notes,bar)=>notes.forEach((note,index)=>{
       const value=bars[bar][index];

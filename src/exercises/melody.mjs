@@ -39,9 +39,9 @@ function readingStep(prompt,names,reference) {
   }};
 }
 
-function solfegeQuestion(type,{clef=selectClef(),difficulty=$('sight-difficulty')?.value}={}) {
+function solfegeQuestion(type,{clef=selectClef(),difficulty=$('sight-difficulty')?.value,signature}={}) {
   if(!solfegeLevels[difficulty])difficulty='beginner';
-  const meter=selectMeter();
+  const meter=selectMeter(signature);
   const {measures,plan}=generateSolfege(meter,{type,clef,difficulty});
   const both=clef==='both';
   const level=solfegeLevels[difficulty];
@@ -62,20 +62,23 @@ function melodyQuestion(type,options={}) {
   const {barCount,difficulty=$('dictation-difficulty')?.value}=options;
   const level=Object.hasOwn(solfegeLevels,difficulty)?difficulty:'beginner';
   const clef = pick(Object.keys(clefs));
-  const meter = selectMeter();
+  const meter = selectMeter(options.signature);
   const {bottom} = clefs[clef];
-  const pitches = Array.from({length:8},(_,i)=>bottom+i);
+  const phrasePitches = Array.from({length:8},(_,i)=>bottom+i);
   const tonic = clef === 'sol' ? 7 : -7;
   const count=Number(barCount??$('dictation-bars')?.value)===4?4:2;
-  const measures = generateDictation(meter,pitches,tonic,count,level);
+  const measures = generateDictation(meter,phrasePitches,tonic,count,level);
+  // Include middle C through C6 in either clef, plus the bass notes used in dictations.
+  const lowestPitch=Math.min(0,bottom);
+  const pitches=Array.from({length:14-lowestPitch+1},(_,i)=>lowestPitch+i);
   const context = `Clave de ${clefLabel(clef)} · ${meter.top}/${meter.bottom} · ${solfegeLevels[level].label}`;
-  const solution = staff({clef,meter,measures,label:`${context}, melodía de ${measures.length} compases`});
+  const solution = staff({clef,meter,measures,pitches,label:`${context}, melodía de ${measures.length} compases`});
   const pulse = countIn(meter);
   const melody = melodyEvents(measures,meter);
   const reference = [[midi(tonic),0,.72,.16]];
   const listening = [...pulse,...melody].map(([note,time,length,volume,voice])=>[note,time+1,length,volume,voice]);
   return {context:context + ` · ${count} compases · Nota de referencia: ` + pitchLabel(tonic),
-    notation:staff({clef,meter,measures:measures.map(()=>[]),label:context}),
+    notation:staff({clef,meter,pitches,measures:measures.map(()=>[]),label:context}),
     events:[...reference,...listening],steps:[dictationStep(measures,pitches,meter,solution,clef)]};
 }
 

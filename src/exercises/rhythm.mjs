@@ -50,8 +50,8 @@ function tupletNotes(size,unit) {
   return Array.from({length:size},()=>({pitch:6,length:unit/size,tuplet}));
 }
 
-function rhythmQuestion(type='syncopation') {
-  const meter = selectMeter();
+function rhythmQuestion(type='syncopation',{signature}={}) {
+  const meter = selectMeter(signature);
   const context = meterLabel(meter);
   const targetBar = pick([0,1]);
   const poly = type==='poly';
