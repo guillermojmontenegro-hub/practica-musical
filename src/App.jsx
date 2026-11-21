@@ -2,6 +2,7 @@ import React, { memo, useEffect, useLayoutEffect, useRef, useState } from 'react
 import Dashboard from './Dashboard.jsx';
 import { initializeApp } from './app.mjs';
 import { installCustomSelects } from './CustomSelect.jsx';
+import { solfegeLevels } from './solfege.mjs';
 
 const expandedOnDesktop=()=>!window.matchMedia('(max-width: 900px)').matches;
 
@@ -55,6 +56,13 @@ const SidebarControls=memo(function SidebarControls() {
 <div className="sidebar-section-label">CONFIGURACIÓN</div><SoundSettings /><GuidedPractice /></>;
 });
 
+function DifficultySelect({id}) {
+  return <label className="mode" id={id+'-label'} hidden><span>Dificultad</span>
+    <select id={id} defaultValue="beginner">{Object.entries(solfegeLevels).map(([value,level])=>
+      <option key={value} value={value}>{level.label}</option>)}</select>
+  </label>;
+}
+
 function ExerciseWorkspace() {
   return (<div className="layout" id="exercise-layout">
 <section className="card" aria-labelledby="title">
@@ -68,7 +76,8 @@ function ExerciseWorkspace() {
     <label className="mode" id="progression-dominants-label" hidden><span>Dominantes</span><select id="progression-dominants" aria-label="Dominantes secundarias en la progresión" defaultValue="mixed"><option value="mixed">Indistinto</option><option value="none">Sin dominantes</option><option value="always">Con dominante</option></select></label>
     <label className="mode" id="key-practice-filter" hidden><span>Tonalidad</span><select id="key-practice" defaultValue="both"><option value="major">Mayor</option><option value="minor">Menor</option><option value="both">Ambas</option></select></label>
     <label className="mode" id="meter-filter" hidden><span>Compás</span><select id="meter-choice"><option value="mixed">Ambos</option><option value="simple">Simple</option><option value="compound">Compuesto</option></select></label>
-    <label className="mode" id="sight-difficulty-label" hidden><span>Dificultad</span><select id="sight-difficulty" defaultValue="beginner"><option value="beginner">Inicial</option><option value="intermediate">Intermedio</option><option value="advanced">Avanzado</option></select></label>
+    <DifficultySelect id="sight-difficulty" />
+    <DifficultySelect id="dictation-difficulty" />
     <label className="mode" id="sight-clef-label" hidden><span>Clave</span><select id="sight-clef" defaultValue="sol"><option value="sol">Clave de sol</option><option value="fa">Clave de fa</option><option value="both">Ambas</option></select></label>
     <label className="mode" id="dictation-bars-label" hidden><span>Compases</span><select id="dictation-bars" defaultValue="2"><option value="2">2</option><option value="4">4</option></select></label>
     <label className="mode" id="rhythm-pitches-label" hidden><span>Voces</span><select id="rhythm-pitches"><option value="1">Una voz</option><option value="2">Dos voces</option></select></label>

@@ -116,11 +116,23 @@ export function initExerciseUI(advance,practiceActive) {
   function saveDraft() {
     if (!question) return;
     const savedOutcomes=outcomes.map(({items,...result})=>question.steps.length>1?{...result,items}:result);
-    writeCookie(draftKey,{mode,seed,step,selected,firstCorrect,listens,sound,grade:restoredGrade,outcomes:savedOutcomes,fields:fieldDraft,barCount:mode==='dictation'?question.notation.measures.length:undefined});
+    const dictationOptions=mode==='dictation'?{barCount:question.notation.measures.length,difficulty:$('dictation-difficulty').value}:{};
+    writeCookie(draftKey,{mode,seed,step,selected,firstCorrect,listens,sound,grade:restoredGrade,outcomes:savedOutcomes,fields:fieldDraft,...dictationOptions});
   }
   function newQuestion(restore) {
-    // Older dictation drafts always had four bars; do not replay them into two.
-    if(mode==='dictation'&&restore&&(restore.barCount??4)!==Number($('dictation-bars').value))restore=undefined;
+    if(mode==='dictation'&&restore) {
+      if((restore.barCount??4)!==Number($('dictation-bars').value)) restore=undefined;
+      else {
+        const difficulty=$('dictation-difficulty');
+        // The previous generator is now the advanced level. Resume its exact melody.
+        if(!restore.difficulty&&!preferences.dictationDifficulty) {
+          difficulty.value='advanced';
+          preferences.dictationDifficulty=difficulty.value;
+          savePreferences();
+        }
+        if((restore.difficulty??'advanced')!==difficulty.value) restore=undefined;
+      }
+    }
     stopAudio();
     seed = restore?.seed ?? Math.floor(Math.random()*4294967296);
     question = withSeed(seed,()=>{
@@ -162,6 +174,7 @@ export function initExerciseUI(advance,practiceActive) {
     $('meter-filter').hidden = !meter;
     for(const id of ['sight-clef-label','sight-difficulty-label']) $(id).hidden=!['sightRead','sightSing'].includes(mode);
     $('dictation-bars-label').hidden = mode !== 'dictation';
+    $('dictation-difficulty-label').hidden = mode !== 'dictation';
     $('key-practice-filter').hidden=mode!=='keyRead';
     $('rhythm-pitches-label').hidden = !question.rhythmPitches;
     $('count').textContent = 'Ejercicio ' + attempts[mode] + (mode === 'harmony' ? ' · ' + (step+1) + '/2' : '');
@@ -294,7 +307,7 @@ export function initExerciseUI(advance,practiceActive) {
     advance();
     focusQuestion();
   });
-  for(const id of ['sight-clef','sight-difficulty']) $(id).addEventListener('change',()=>newQuestion());
+  for(const id of ['sight-clef','sight-difficulty','dictation-difficulty']) $(id).addEventListener('change',()=>newQuestion());
   $('meter-choice').addEventListener('change',()=>newQuestion());
   $('dictation-bars').addEventListener('change',()=>newQuestion());
   $('key-practice').addEventListener('change',()=>newQuestion());

@@ -45,7 +45,8 @@ function initSettings(onChange) {
   $('progression-sevenths').checked = preferences.progressionSevenths === true;
   for (const [id,key,values,fallback] of [
     ['sight-clef','sightClef',['sol','fa','both'],'sol'],
-    ['sight-difficulty','sightDifficulty',['beginner','intermediate','advanced'],'beginner']
+    ['sight-difficulty','sightDifficulty',['beginner','intermediate','advanced'],'beginner'],
+    ['dictation-difficulty','dictationDifficulty',['beginner','intermediate','advanced'],'beginner']
   ]) {
     $(id).value=values.includes(preferences[key])?preferences[key]:fallback;
     $(id).addEventListener('change',()=>{preferences[key]=$(id).value;savePreferences();});

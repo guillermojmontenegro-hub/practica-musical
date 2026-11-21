@@ -22,6 +22,30 @@ function pickStaffPlan(barCount) {
   return Array.from({length:barCount},(_,bar)=>bar<split?first:otherStaff(first));
 }
 
+export function pulseMelody(meter,tonic,barCount,subdivide) {
+  return Array.from({length:barCount},()=>Array.from({length:meter.beats},()=>{
+    const split=subdivide&&pick([true,false]);
+    return (split?(meter.unit===3?[1,2]:[1,1]):[meter.unit]).map(length=>({pitch:tonic,length}));
+  }).flat());
+}
+
+export function generateDictation(meter,pitches,tonic,barCount,difficulty) {
+  if(difficulty==='advanced') return generateMelody(meter,pitches,tonic,barCount);
+  const subdivide=difficulty==='intermediate';
+  const measures=pulseMelody(meter,tonic,barCount,subdivide);
+  const notes=measures.flat();
+  const step=subdivide?2:1;
+  let previous=tonic;
+  // Leave enough steps to return to the reference note without a final leap.
+  for(let index=1;index<notes.length;index++) {
+    const remaining=notes.length-index-1;
+    const choices=pitches.filter(pitch=>Math.abs(pitch-previous)<=step&&Math.abs(pitch-tonic)<=remaining*step);
+    notes[index].pitch=pick(choices);
+    previous=notes[index].pitch;
+  }
+  return measures;
+}
+
 export function generateMelody(meter,pitches,tonic,barCount=4,{plan=null}={}) {
   barCount=Number(barCount)===2?2:4;
   const capacity=meter.beats*meter.unit;

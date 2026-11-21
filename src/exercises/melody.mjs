@@ -1,5 +1,5 @@
 import { generateSolfege, solfegeLevels } from '../solfege.mjs';
-import { generateMelody, melodyEvents } from '../melody-patterns.mjs';
+import { generateDictation, melodyEvents } from '../melody-patterns.mjs';
 import { createScoreEditor, groupTools, soundingTimeline, sumNotes } from '../score-model.mjs';
 import { transcriptionErrors } from '../diagnostics.mjs';
 import { transcriptionAssessment } from '../grading.mjs';
@@ -59,15 +59,16 @@ function solfegeQuestion(type,{clef=selectClef(),difficulty=$('sight-difficulty'
 
 function melodyQuestion(type,options={}) {
   if(type==='sightRead'||type==='sightSing')return solfegeQuestion(type,options);
-  const {barCount}=options;
+  const {barCount,difficulty=$('dictation-difficulty')?.value}=options;
+  const level=Object.hasOwn(solfegeLevels,difficulty)?difficulty:'beginner';
   const clef = pick(Object.keys(clefs));
   const meter = selectMeter();
   const {bottom} = clefs[clef];
   const pitches = Array.from({length:8},(_,i)=>bottom+i);
   const tonic = clef === 'sol' ? 7 : -7;
   const count=Number(barCount??$('dictation-bars')?.value)===4?4:2;
-  const measures = generateMelody(meter,pitches,tonic,count);
-  const context = `Clave de ${clefLabel(clef)} · ${meter.top}/${meter.bottom}`;
+  const measures = generateDictation(meter,pitches,tonic,count,level);
+  const context = `Clave de ${clefLabel(clef)} · ${meter.top}/${meter.bottom} · ${solfegeLevels[level].label}`;
   const solution = staff({clef,meter,measures,label:`${context}, melodía de ${measures.length} compases`});
   const pulse = countIn(meter);
   const melody = melodyEvents(measures,meter);

@@ -1,5 +1,5 @@
 import { pick } from './dom.mjs';
-import { generateMelody } from './melody-patterns.mjs';
+import { generateMelody, pulseMelody } from './melody-patterns.mjs';
 
 export const solfegeLevels = {
   beginner:{label:'Inicial',description:'Grados conjuntos y ritmos simples',step:1},
@@ -19,10 +19,7 @@ export function generateSolfege(meter,{type='sightRead',clef='sol',difficulty='b
   const tonic=pick(pitches);
   let measures;
   if(difficulty==='advanced') measures=generateMelody(meter,[tonic],tonic,count);
-  else measures=Array.from({length:count},()=>Array.from({length:meter.beats},()=>{
-    const split=difficulty==='intermediate'&&pick([true,false]);
-    return (split?(meter.unit===3?[1,2]:[1,1]):[meter.unit]).map(length=>({pitch:tonic,length}));
-  }).flat());
+  else measures=pulseMelody(meter,tonic,count,difficulty==='intermediate');
   let previous=tonic;
   let direction=tonic<(low+high)/2?1:-1;
   const plan=[];

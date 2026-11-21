@@ -1,6 +1,27 @@
 import {test,expect} from '@playwright/test';
 import {chooseExercise,selectValue} from './navigation.mjs';
 
+test('dictation difficulty starts a new melody, persists and is independent of sight reading',async({page})=>{
+  await page.goto('/');await chooseExercise(page,7);
+  const level=page.getByRole('combobox',{name:'Dificultad',exact:true});
+  await expect(level).toHaveText(/Inicial/);
+  await selectValue(page,'#dictation-bars','4');
+  for(const [value,label] of [['intermediate','Intermedio'],['advanced','Avanzado']]) {
+    await page.locator('#notation').focus();await page.keyboard.press('Enter');
+    await expect(page.locator('[data-note-bar]')).toHaveCount(1);
+    await selectValue(page,level,value);
+    await expect(page.locator('#context')).toContainText(label);
+    await expect(page.locator('[data-note-bar]')).toHaveCount(0);
+    await expect(page.locator('[data-staff-bar]')).toHaveCount(4);
+  }
+  await page.locator('#notation').focus();await page.keyboard.press('Enter');
+  await page.reload();
+  await expect(level).toHaveText(/Avanzado/);
+  await expect(page.locator('[data-note-bar]')).toHaveCount(1);
+  await chooseExercise(page,5);
+  await expect(level).toHaveText(/Inicial/);
+});
+
 test('dictation length defaults to two, persists, resets the draft and controls completion',async({page})=>{
   const errors=[];page.on('pageerror',error=>errors.push(error.message));
   await page.setViewportSize({width:390,height:1000});
@@ -40,6 +61,25 @@ test('dictation length defaults to two, persists, resets the draft and controls 
   await chooseExercise(page,5);await expect(length).toBeHidden();
   await expect(page.locator('#notation [data-voice="1"]')).toHaveCount(4);
   expect(errors).toEqual([]);
+});
+
+test('a draft from before difficulty levels resumes at advanced with its original seed and notes',async({page})=>{
+  await page.goto('/');await chooseExercise(page,7);
+  await selectValue(page,'#dictation-difficulty','advanced');
+  await page.locator('#notation').focus();await page.keyboard.press('Enter');
+  const originalSeed=await page.evaluate(async()=>{
+    const {readStorage,writeCookie}=await import('/src/storage.mjs');
+    const draft=readStorage('practica-ejercicio');
+    const prefs=readStorage('practica-musical-preferencias');
+    delete draft.difficulty;
+    delete prefs.dictationDifficulty;
+    writeCookie('practica-ejercicio',draft);
+    writeCookie('practica-musical-preferencias',prefs);
+    return draft.seed;
+  });
+  await page.reload();await expect(page.locator('#dictation-difficulty')).toHaveValue('advanced');
+  await expect(page.locator('[data-note-bar]')).toHaveCount(1);
+  expect(await page.evaluate(async()=>(await import('/src/storage.mjs')).readStorage('practica-ejercicio').seed)).toBe(originalSeed);
 });
 
 test('legacy four-bar drafts cannot restore an out-of-range bar into the new default',async({page})=>{
