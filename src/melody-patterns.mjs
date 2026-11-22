@@ -22,26 +22,78 @@ function pickStaffPlan(barCount) {
   return Array.from({length:barCount},(_,bar)=>bar<split?first:otherStaff(first));
 }
 
-export function pulseMelody(meter,tonic,barCount,subdivide) {
-  return Array.from({length:barCount},()=>Array.from({length:meter.beats},()=>{
+export function pulseMelody(meter,tonic,barCount,subdivide,syncopatedBar=-1) {
+  return Array.from({length:barCount},(_,bar)=>Array.from({length:meter.beats},(_,beat)=>{
+    // Anticipate the second pulse by an eighth note and release an eighth after it.
+    if(bar===syncopatedBar) {
+      if(beat===0) return [{pitch:tonic,length:meter.unit-1},{pitch:tonic,length:1,tie:true}];
+      if(beat===1) return [{pitch:tonic,length:1},{pitch:tonic,length:meter.unit-1}];
+    }
     const split=subdivide&&pick([true,false]);
     return (split?(meter.unit===3?[1,2]:[1,1]):[meter.unit]).map(length=>({pitch:tonic,length}));
   }).flat());
 }
 
-export function generateDictation(meter,pitches,tonic,barCount,difficulty) {
-  if(difficulty==='advanced') return generateMelody(meter,pitches,tonic,barCount);
-  const subdivide=difficulty==='intermediate';
-  const measures=pulseMelody(meter,tonic,barCount,subdivide);
+// Offsets in scale steps: a scale fragment, a turn, a broken triad and two leaps with a return.
+const dictationMotifs=[[0,1,2],[0,2,1],[0,2,4],[0,3,2],[0,3,1]];
+const cadencePatterns=[[[0]],[[1,0],[-1,0]],[[2,1,0],[-2,-1,0],[1,-1,0]]];
+
+function phraseDictation(attacks,pitches,tonic) {
+  const motifs=[];
+  for(const shape of dictationMotifs) for(const start of pitches) for(const direction of [-1,1]) {
+    const notes=shape.map(offset=>start+direction*offset);
+    if(notes.every(pitch=>pitches.includes(pitch))&&Math.abs(midi(notes[1])-midi(start))<=5) {
+      motifs.push({shape,notes});
+    }
+  }
+  const cadenceLength=1+(attacks.length-1)%3;
+  const cadences=cadencePatterns[cadenceLength-1].map(pattern=>pattern.map(offset=>tonic+offset))
+    .filter(notes=>notes.every(pitch=>pitches.includes(pitch)));
+  const phrase=[];
+  let shapeToEcho;
+  const joins=(from,to)=>from!==to&&Math.abs(from-to)<=2;
+  while(phrase.length<attacks.length-cadenceLength) {
+    const lastMotif=phrase.length+3===attacks.length-cadenceLength;
+    const candidates=motifs.filter(({notes})=>
+      (phrase.length?joins(phrase.at(-1),notes[0]):notes[0]===tonic)&&
+      (!lastMotif||cadences.some(ending=>joins(notes[2],ending[0]))));
+    // Answer each opening motif with its shape at another height or in the opposite direction.
+    const echoes=candidates.filter(({shape})=>shape===shapeToEcho);
+    const choices=echoes.length?echoes:candidates;
+    const wider=choices.filter(({notes})=>notes.some(pitch=>!phrase.includes(pitch)));
+    const motif=pick(wider.length?wider:choices);
+    phrase.push(...motif.notes);
+    shapeToEcho=shapeToEcho?undefined:motif.shape;
+  }
+  phrase.push(...pick(cadences.filter(ending=>joins(phrase.at(-1),ending[0]))));
+  attacks.forEach((note,index)=>{note.pitch=phrase[index];});
+}
+
+export const currentDictationVersion=3;
+export function generateDictation(meter,pitches,tonic,barCount,difficulty,version=currentDictationVersion) {
+  if(difficulty==='advanced'&&version===1) return generateMelody(meter,pitches,tonic,barCount);
+  const subdivide=difficulty==='intermediate'||difficulty==='advanced';
+  const syncopatedBar=difficulty==='advanced'&&pick([true,false])
+    ? pick(Array.from({length:barCount},(_,i)=>i)) : -1;
+  const measures=pulseMelody(meter,tonic,barCount,subdivide,syncopatedBar);
   const notes=measures.flat();
-  const step=subdivide?2:1;
-  let previous=tonic;
-  // Leave enough steps to return to the reference note without a final leap.
-  for(let index=1;index<notes.length;index++) {
-    const remaining=notes.length-index-1;
-    const choices=pitches.filter(pitch=>Math.abs(pitch-previous)<=step&&Math.abs(pitch-tonic)<=remaining*step);
-    notes[index].pitch=pick(choices);
-    previous=notes[index].pitch;
+  const attacks=notes.filter((note,index)=>!notes[index-1]?.tie);
+  if(difficulty==='advanced'&&version>=3) {
+    phraseDictation(attacks,pitches,tonic);
+  } else {
+    const step=subdivide?2:1;
+    let previous=tonic;
+    // Leave enough steps to return to the reference note without a final leap.
+    for(let index=1;index<attacks.length;index++) {
+      const remaining=attacks.length-index-1;
+      const choices=pitches.filter(pitch=>Math.abs(pitch-previous)<=step&&Math.abs(pitch-tonic)<=remaining*step);
+      attacks[index].pitch=pick(choices);
+      previous=attacks[index].pitch;
+    }
+  }
+  if(syncopatedBar>=0) {
+    const bar=measures[syncopatedBar];
+    bar[2].pitch=bar[1].pitch;
   }
   return measures;
 }

@@ -72,6 +72,7 @@ test('a draft from before difficulty levels resumes at advanced with its origina
     const draft=readStorage('practica-ejercicio');
     const prefs=readStorage('practica-musical-preferencias');
     delete draft.difficulty;
+    delete draft.rhythmVersion;
     delete prefs.dictationDifficulty;
     writeCookie('practica-ejercicio',draft);
     writeCookie('practica-musical-preferencias',prefs);
@@ -79,7 +80,11 @@ test('a draft from before difficulty levels resumes at advanced with its origina
   });
   await page.reload();await expect(page.locator('#dictation-difficulty')).toHaveValue('advanced');
   await expect(page.locator('[data-note-bar]')).toHaveCount(1);
-  expect(await page.evaluate(async()=>(await import('/src/storage.mjs')).readStorage('practica-ejercicio').seed)).toBe(originalSeed);
+  const resumed=await page.evaluate(async()=>(await import('/src/storage.mjs')).readStorage('practica-ejercicio'));
+  expect(resumed.seed).toBe(originalSeed);
+  expect(resumed.rhythmVersion).toBe(1);
+  await selectValue(page,'#dictation-bars','4');
+  expect(await page.evaluate(async()=>(await import('/src/storage.mjs')).readStorage('practica-ejercicio').rhythmVersion)).toBe(3);
 });
 
 test('legacy four-bar drafts cannot restore an out-of-range bar into the new default',async({page})=>{

@@ -66,7 +66,7 @@ Los ejercicios mantienen una presentación mínima: consigna, contexto musical, 
 
 ## Respuestas y edición
 
-La transcripción melódica empieza en nivel Inicial con dos compases. En Inicial, cada pulso lleva una nota y la melodía avanza por grados conjuntos o repite la altura. El nivel Intermedio incorpora saltos de tercera y subdivisiones del pulso. El Avanzado incluye síncopas, ligaduras y grupos irregulares. En los tres niveles podés elegir dos o cuatro compases. Cambiar la dificultad o la cantidad de compases inicia otro dictado y guarda la elección para la próxima práctica.
+La transcripción melódica empieza en nivel Inicial con dos compases. En Inicial, cada pulso lleva una nota y la melodía avanza por grados conjuntos o repite la altura. El nivel Intermedio incorpora saltos de tercera y subdivisiones del pulso. En Avanzado, la melodía combina fragmentos de escala y arpegios en motivos de tres notas que pueden reaparecer a otra altura o cambiar de dirección. Los saltos llegan hasta una cuarta y la frase vuelve a la tónica. Puede aparecer una síncopa por dictado. Una corchea se anticipa al pulso siguiente y se prolonga con una ligadura. El resto del ritmo sigue el pulso y sus subdivisiones habituales. En los tres niveles podés elegir dos o cuatro compases. Cambiar la dificultad o la cantidad de compases inicia otro dictado y guarda la elección para la próxima práctica.
 
 En solfeo y en los dictados melódicos y rítmicos, «Ambos» reparte los compases en tandas de cinco. Cada tanda incluye 2/4, 3/4 y 4/4 intercalados con 6/8 y 9/8. Con «Simple» o «Compuesto» se recorre toda la familia antes de empezar otra tanda. Cada filtro recuerda su posición al cambiar de ejercicio o recargar la página.
 

@@ -1,5 +1,5 @@
 import { generateSolfege, solfegeLevels } from '../solfege.mjs';
-import { generateDictation, melodyEvents } from '../melody-patterns.mjs';
+import { currentDictationVersion, generateDictation, melodyEvents } from '../melody-patterns.mjs';
 import { createScoreEditor, groupTools, soundingTimeline, sumNotes } from '../score-model.mjs';
 import { transcriptionErrors } from '../diagnostics.mjs';
 import { transcriptionAssessment } from '../grading.mjs';
@@ -67,7 +67,8 @@ function melodyQuestion(type,options={}) {
   const phrasePitches = Array.from({length:8},(_,i)=>bottom+i);
   const tonic = clef === 'sol' ? 7 : -7;
   const count=Number(barCount??$('dictation-bars')?.value)===4?4:2;
-  const measures = generateDictation(meter,phrasePitches,tonic,count,level);
+  const rhythmVersion=options.rhythmVersion??currentDictationVersion;
+  const measures=generateDictation(meter,phrasePitches,tonic,count,level,rhythmVersion);
   // Include middle C through C6 in either clef, plus the bass notes used in dictations.
   const lowestPitch=Math.min(0,bottom);
   const pitches=Array.from({length:14-lowestPitch+1},(_,i)=>lowestPitch+i);
@@ -77,7 +78,7 @@ function melodyQuestion(type,options={}) {
   const melody = melodyEvents(measures,meter);
   const reference = [[midi(tonic),0,.72,.16]];
   const listening = [...pulse,...melody].map(([note,time,length,volume,voice])=>[note,time+1,length,volume,voice]);
-  return {context:context + ` · ${count} compases · Nota de referencia: ` + pitchLabel(tonic),
+  return {rhythmVersion,context:context + ` · ${count} compases · Nota de referencia: ` + pitchLabel(tonic),
     notation:staff({clef,meter,pitches,measures:measures.map(()=>[]),label:context}),
     events:[...reference,...listening],steps:[dictationStep(measures,pitches,meter,solution,clef)]};
 }

@@ -117,7 +117,7 @@ export function initExerciseUI(advance,practiceActive) {
   function saveDraft() {
     if (!question) return;
     const savedOutcomes=outcomes.map(({items,...result})=>question.steps.length>1?{...result,items}:result);
-    const dictationOptions=mode==='dictation'?{barCount:question.notation.measures.length,difficulty:$('dictation-difficulty').value}:{};
+    const dictationOptions=mode==='dictation'?{barCount:question.notation.measures.length,difficulty:$('dictation-difficulty').value,rhythmVersion:question.rhythmVersion}:{};
     const signature=modes[mode].meter?meterLabel(question.notation.meter):undefined;
     writeCookie(draftKey,{mode,seed,step,selected,firstCorrect,listens,sound,grade:restoredGrade,outcomes:savedOutcomes,fields:fieldDraft,signature,meterRounds,...dictationOptions});
   }
@@ -126,7 +126,7 @@ export function initExerciseUI(advance,practiceActive) {
       if((restore.barCount??4)!==Number($('dictation-bars').value)) restore=undefined;
       else {
         const difficulty=$('dictation-difficulty');
-        // The previous generator is now the advanced level. Resume its exact melody.
+        // Drafts from before the difficulty selector used the original advanced rhythms.
         if(!restore.difficulty&&!preferences.dictationDifficulty) {
           difficulty.value='advanced';
           preferences.dictationDifficulty=difficulty.value;
@@ -144,7 +144,7 @@ export function initExerciseUI(advance,practiceActive) {
       signature=meterRounds[family].shift();
     }
     question = withSeed(seed,()=>{
-      const item = modes[mode].create({signature});
+      const item = modes[mode].create({signature,rhythmVersion:restore?(restore.rhythmVersion??1):undefined});
       item.steps.forEach(part=>{if (part.options) part.options = shuffle(part.options);});
       return item;
     });
